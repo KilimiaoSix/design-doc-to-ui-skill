@@ -1,8 +1,8 @@
 window.PROTOTYPE_DATA = {
   lang: "zh-CN",
-  title: "产品交互原型",
+  title: "静态交互原型",
   kicker: "交互原型",
-  summary: "请用基于页面 brief、逐页评审结果和结构化设计文档生成的数据替换这个示例。",
+  summary: "请用基于页面 brief、逐页评审结果和结构化设计文档生成的数据替换此示例。React 模板是默认交付方式，本静态模板仅保留为兼容选项。",
   labels: {
     pages: "页面",
     status: "状态",
@@ -23,8 +23,8 @@ window.PROTOTYPE_DATA = {
       navLabel: "首页",
       endpoint: "mobile",
       status: "approved",
-      headline: "今天先完成一个核心任务",
-      purpose: "展示真实 HTML 组件、控件、状态和页面跳转；生成的 UI 图片只作为视觉参考。",
+      headline: "请替换为真实页面",
+      purpose: "展示真实组件、控件、状态和页面跳转；生成的 UI 图片只作为视觉参考。",
       controls: [
         {
           id: "target",
@@ -79,39 +79,24 @@ window.PROTOTYPE_DATA = {
       headline: "完成信息填写",
       purpose: "演示输入、开关、保存反馈和返回路径。",
       controls: [
-        {
-          id: "name",
-          type: "text",
-          label: "名称",
-          placeholder: "请输入名称",
-          value: "",
-        },
-        {
-          id: "enabled",
-          type: "toggle",
-          label: "启用提醒",
-          value: true,
-        },
+        { id: "name", type: "text", label: "名称", placeholder: "输入名称", value: "" },
+        { id: "enabled", type: "checkbox", label: "启用提醒", value: true },
       ],
       sections: [
         {
-          title: "下一步",
+          title: "表单内容",
           items: [
-            {
-              title: "返回首页",
-              description: "验证主路径可达。",
-              action: { label: "返回", target: "home" },
-            },
+            { title: "字段校验", description: "根据真实需求补齐校验、错误态和成功态。" },
           ],
         },
       ],
       states: [
-        { name: "成功", description: "保存成功后的提示。" },
-        { name: "校验错误", description: "必填字段为空时的错误提示。" },
+        { name: "默认", description: "等待用户填写。" },
+        { name: "成功", description: "保存成功后显示结果反馈。" },
       ],
       actions: [
-        { label: "提交", toast: "提交成功" },
-        { label: "返回", target: "home", variant: "secondary" },
+        { label: "返回首页", target: "home" },
+        { label: "提交", dialog: "提交成功。", variant: "primary" },
       ],
       referenceImage: "",
     },

@@ -1,8 +1,8 @@
 # Structured Design Document Output
 
-Generate a structured design document after the main-agent audit passes and before HTML/Figma implementation begins. This document is the source of truth for HTML and Figma prototype implementation.
+Generate a structured design document after the main-agent audit passes and before React/Figma implementation begins. This document is the source of truth for React and optional Figma prototype implementation.
 
-In a scripted run, write the document to the `structured_design_doc` path recorded in `ui-run.json` unless the user requests another path. The document must exist before `validate_design_run.py --phase design-completion` can allow HTML/Figma.
+In a scripted run, write the document to the `structured_design_doc` path recorded in `ui-run.json` unless the user requests another path. The document must exist before `validate_design_run.py --phase design-completion` can allow React/Figma.
 
 ## Language Rules
 
@@ -50,11 +50,13 @@ Use equivalent headings in `requested_output_language`. For Chinese output, use:
 
 ## 10. 主 Agent 整体功能评审
 
-## 11. HTML 原型
+## 11. React 原型
 
 ## 12. Figma
 
-## 13. 开放问题与风险
+## 13. 飞书交付
+
+## 14. 开放问题与风险
 ```
 
 For other languages, translate the same structure rather than reusing Chinese or English labels.
@@ -66,7 +68,7 @@ For other languages, translate the same structure rather than reusing Chinese or
 - Embed approved UI images with relative links when writing Markdown.
 - Include blocked, infeasible, and deferred pages in the page map and review summary; do not hide them as approved.
 - Include worker evidence paths for each generated page when useful for auditability.
-- Include prototype implementation requirements derived from page briefs, route targets, interaction notes, and approved images.
-- Before HTML/Figma generation, mark prototype paths and Figma links as `pending`.
-- After HTML/Figma generation, update the same design document with the final prototype path, Figma link if any, and final audit notes.
-- Mention Figma only if generated or requested.
+- Include React prototype implementation requirements derived from page briefs, route targets, interaction notes, and approved images.
+- Before React/Figma/Feishu generation, mark prototype paths, Figma links, and Feishu links as `pending`.
+- After React/Figma/Feishu generation, update the same design document with the final React project path, run command, Figma link if any, Feishu link if any, visual parity result, and final audit notes.
+- Mention Figma and Feishu only if generated/uploaded or requested.

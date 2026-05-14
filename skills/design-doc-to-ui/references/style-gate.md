@@ -121,7 +121,7 @@ After review or user confirmation, lock the style:
 }
 ```
 
-Every page prompt, page review, HTML prototype, and final design document must reference this contract.
+Every page prompt, page review, React prototype, and final design document must reference this contract.
 
 ## Fast Path
 

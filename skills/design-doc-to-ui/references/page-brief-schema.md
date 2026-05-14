@@ -62,9 +62,9 @@ When a scripted run exists, `ui-run.json` is the canonical copy of `page_invento
 - Use exact visible copy when the source provides it.
 - If exact copy is unknown, use short generic labels in `output_language` and mark copy as draft.
 - Do not ask image generation to produce dense paragraphs.
-- Do not overload one image with too many states. Use `state_requirements` to decide which states need separate page briefs or separate HTML states.
+- Do not overload one image with too many states. Use `state_requirements` to decide which states need separate page briefs or separate React states.
 - For mascot/IP requirements, specify whether the asset is a provided image, a generated transparent cutout, or a visual reference.
-- Include the route and interaction expectations needed for the HTML prototype.
+- Include the route and interaction expectations needed for the React prototype.
 
 ## Page Coverage Gate
 

@@ -1,11 +1,19 @@
 ---
 name: design-doc-to-ui
-description: Convert product requirements, design documents, Feishu/Lark docs, Markdown specs, product prototypes, wireframes, screenshots, and brand assets into fully covered cross-device APP UI image drafts, structured design documentation, real interactive local HTML prototype folders, and optional Figma updates. Use when Codex needs to read a design/product document, summarize app requirements, derive a complete source-backed page inventory, explore custom visual directions with style-sample image generation, lock a global style contract, generate every required UI page with page-level SubAgents, review each page independently, perform a main-agent functional audit, or build an interactive prototype. Requires direct SubAgent delegation for every style-sample image-generation, UI image-generation, and calibration task; create SubAgents directly when the tool is available and block the phase only when SubAgents or image generation are technically unavailable.
+description: "Convert PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into complete UI design packages with source-backed page inventory, imagegen-generated UI images for every required page, structured design docs in the request language, runnable React prototypes that visually recreate approved images, and optional Feishu/Figma delivery. Use when Codex needs complete page coverage, custom style sampling, per-page SubAgent image generation/review, main-agent audit, React visual parity implementation, optional Feishu upload, or optional Figma output. Requires direct SubAgent delegation for style-sample image generation, final UI image generation, and calibration; do not ask for normal SubAgent confirmation, cap active SubAgents at 6, and block if SubAgents or image generation are unavailable."
 ---
 
 # Design Doc To UI
 
-Use this skill to turn a source product/design document into an approved UI design package. The package must contain source-backed page coverage, reviewed UI image drafts for every required page, a structured design document in the requested language, and a local component-level HTML prototype. Use Figma only when the user provides a Figma link/file or explicitly asks for Figma output.
+Use this skill to turn a source product/design document into an approved UI design package. The required package contains:
+
+- a structured design document in the requested language, with imagegen-generated page images for every required page;
+- a runnable React frontend prototype project that visually recreates the approved AI page images and adds the declared interactions.
+
+Optional package outputs:
+
+- upload the design document and image attachments to Feishu/Lark only when the user asks for Feishu output;
+- create/update Figma only when the user provides a Figma link/file or explicitly asks for Figma output.
 
 ## Required Workflow
 
@@ -22,10 +30,12 @@ Use this skill to turn a source product/design document into an approved UI desi
 11. Run the Per-Page SubAgent Gate.
 12. Perform the main-agent audit across all pages.
 13. Generate a structured design document in `requested_output_language`.
-14. Run `scripts/validate_design_run.py --phase design-completion`; HTML/Figma remains blocked unless this passes with `html_allowed: true`.
-15. Generate `prototype/prototype-data.js` with `scripts/build_prototype_data.py`, then generate a local component-level interactive HTML prototype folder from the completed design images and structured design document.
-16. Optionally create/update Figma prototype content from the completed design images and structured design document only when the user has provided Figma context or requested Figma.
-17. Perform the Final Functional Audit on the HTML prototype and any requested Figma prototype.
+14. Run `scripts/validate_design_run.py --phase design-completion`; React/Figma remains blocked unless this passes with `react_allowed: true`.
+15. Generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`, then implement the React screens from the completed design images and structured design document.
+16. Run the React Visual Parity Gate: render the React app locally, screenshot every required route, compare each screenshot to its approved AI page image, and repair the React UI until visual parity and interactions pass.
+17. Optionally upload the design document and page images to Feishu/Lark only when requested.
+18. Optionally create/update Figma prototype content only when requested; Figma must recreate the same style and interaction mechanism as the React prototype.
+19. Perform the Final Functional Audit on the React prototype and any requested Feishu/Figma outputs.
 
 Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, or Final Functional Audit.
 
@@ -33,7 +43,7 @@ Do not silently reduce scope with labels such as "pilot", "core flow", "trial", 
 
 ## Scripted Run Manifest
 
-Use the bundled scripts whenever filesystem access is available. These scripts do not replace design judgment; they prevent missing pages, forged completion, premature HTML/Figma work, and manifest drift.
+Use the bundled scripts whenever filesystem access is available. These scripts do not replace design judgment; they prevent missing pages, forged completion, premature React/Figma work, and manifest drift.
 
 Start every run with:
 
@@ -47,8 +57,8 @@ Use these scripts during the run:
 
 - `scripts/ui_job_status.py --run-dir <output-run-dir>`: show missing/ready/approved pages and the next page-worker batch, capped at 6.
 - `scripts/record_ui_worker_result.py --run-dir <output-run-dir> --page-id <page_id>`: register a returned SubAgent worker directory and final image.
-- `scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion`: block or allow HTML/Figma.
-- `scripts/build_prototype_data.py --run-dir <output-run-dir> --copy-template`: generate `prototype/prototype-data.js` from the approved run package.
+- `scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion`: block or allow React/Figma.
+- `scripts/build_prototype_data.py --run-dir <output-run-dir> --template react --copy-template`: generate a React prototype starter project and `prototype/src/prototype-data.js` from the approved run package.
 
 Do not let a SubAgent edit `ui-run.json` directly. SubAgents write only their assigned worker directory; the main agent records worker artifacts with `record_ui_worker_result.py`.
 
@@ -146,11 +156,11 @@ Read `references/main-audit.md` after page workers return.
 
 SubAgent approval is not final. The main agent must audit the full screen set against the original requirements and style contract. If a page fails, revise the brief or prompt and start a new SubAgent worker for that page. If SubAgent delegation is technically unavailable, mark regeneration blocked instead of regenerating in the main thread. If repeated attempts fail, reassess the requirement and mark the page infeasible only after explaining why.
 
-Main-agent approval is required before generating final design documents and HTML prototype.
+Main-agent approval is required before generating final design documents and the React prototype.
 
 ## Design Completion Gate
 
-Do not start HTML or Figma work until the design phase is complete.
+Do not start React or Figma work until the design phase is complete.
 
 The design phase is complete only when:
 
@@ -161,7 +171,7 @@ The design phase is complete only when:
 - The main-agent audit has passed across all approved design images.
 - No style-sampling, page-generation, or regeneration SubAgent is still running.
 
-If any required page is `blocked`, `infeasible`, or missing an approved final image, do not generate HTML/Figma by default. Generate a partial HTML/Figma prototype only if the user explicitly approves a partial prototype after the missing pages are listed.
+If any required page is `blocked`, `infeasible`, or missing an approved final image, do not generate React/Figma by default. Generate a partial React/Figma prototype only if the user explicitly approves a partial prototype after the missing pages are listed.
 
 After the structured design document exists, enforce this gate with:
 
@@ -169,59 +179,67 @@ After the structured design document exists, enforce this gate with:
 python scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion
 ```
 
-Proceed to HTML/Figma only when the script reports `passed: true` and `html_allowed: true`.
+Proceed to React/Figma only when the script reports `passed: true` and `react_allowed: true`. Existing manifests may also expose the backward-compatible `html_allowed` field with the same value.
 
 ## Structured Design Document
 
 Read `references/design-doc-output.md`.
 
-Generate the structured design document before HTML/Figma implementation. Include the product summary, page inventory, user flow, visual style contract, screen specs for every required page, UI images, interaction notes, per-page review results, main-agent audit, prototype implementation requirements, and open questions. Mark HTML/Figma paths as `pending` at this stage, then update the document after the HTML/Figma outputs are created.
+Generate the structured design document before React/Figma implementation. Include the product summary, page inventory, user flow, visual style contract, screen specs for every required page, UI images, interaction notes, per-page review results, main-agent audit, prototype implementation requirements, and open questions. Mark React/Figma/Feishu paths as `pending` at this stage, then update the document after those outputs are created.
 
-## HTML Prototype
+## React Prototype
 
 Read `references/html-prototype.md`.
 
-Do not begin HTML implementation until the Design Completion Gate has passed and the structured design document exists. Build the HTML prototype from the approved design images, structured design document, page briefs, and worker reviews. Do not build HTML from requirements alone while design images are still pending. After HTML is generated and audited, update the structured design document with the HTML path and audit result.
+Do not begin React implementation until the Design Completion Gate has passed and the structured design document exists. Build the React prototype from the approved design images, structured design document, page briefs, and worker reviews. Do not build React from requirements alone while design images are still pending. After React is generated and audited, update the structured design document with the React project path, run command, visual parity result, and audit result.
 
-Generate or verify the prototype data layer with:
+Generate or verify the React prototype data layer with:
 
 ```bash
-python scripts/build_prototype_data.py --run-dir <output-run-dir> --copy-template
+python scripts/build_prototype_data.py --run-dir <output-run-dir> --template react --copy-template
 ```
 
-Use the generated `prototype/prototype-data.js` as the route/page coverage baseline. Custom HTML/CSS/JS may extend it, but must not remove required routes or declared interactions.
+Use the generated `prototype/src/prototype-data.js` as the route/page coverage baseline. Custom React components/CSS may extend it, but must not remove required routes or declared interactions.
 
 Default output is a local folder, not a hosted link:
 
 ```text
 prototype/
   index.html
+  package.json
+  src/
+    main.jsx
+    prototype-data.js
+    styles.css
   assets/
   screens/
-  styles.css
-  prototype-data.js
 ```
 
-Build a component-level interactive HTML/CSS/JS prototype by default. Use generated images only as visual references, thumbnails, or review attachments; do not use full-screen images as the primary UI implementation. If only an image browser can be produced, mark the prototype `blocked/non-compliant` and do not present it as complete.
+Build a component-level interactive React prototype by default. The React UI must visually recreate the approved AI-generated page images: layout, hierarchy, component shapes, spacing, color, typography, navigation, states, and main visual motifs should match the page image closely enough for product/design review. Use generated images only as visual references, thumbnails, review attachments, or cropped/local decorative assets when needed; do not use full-screen images as the primary UI implementation. If only an image browser can be produced, mark the prototype `blocked/non-compliant` and do not present it as complete.
 
 ## Final Functional Audit
 
-After the HTML prototype is created, the main agent must inspect or open it when browser tools are available and verify:
+After the React prototype is created, the main agent must install dependencies if needed, run it locally, inspect or open it when browser tools are available, and verify:
 
 - Every required page has a route/view.
 - Primary buttons, navigation, form controls, selectors, modals, and declared states are reachable.
 - Success, error, empty, and blocked states declared in page briefs are implemented or explicitly marked unavailable.
-- HTML language, page title, navigation, metadata, and visible UI copy follow `requested_output_language`.
+- HTML document `lang`, page title, navigation, metadata, and visible UI copy follow `requested_output_language`.
 - The prototype is not a full-screen screenshot/image browser.
+- The rendered React route screenshot for every required page visually recreates the approved AI page image; material visual differences are blocking failures.
 - Cross-page function flow and visual consistency remain coherent.
 
-If the audit fails, fix the HTML prototype or mark the failing area blocked before final response.
+If the audit fails, fix the React prototype or mark the failing area blocked before final response.
+
+## Feishu/Lark Delivery
+
+Read `references/feishu-delivery.md` only if the user asks to upload, publish, or sync the final design package to Feishu/Lark. Do not upload to Feishu by default.
 
 ## Figma
 
 Read `references/figma-workflow.md` only if the user provides a Figma link/file, asks to sync to Figma, or asks to create a Figma prototype. Do not assume Figma is required.
 
-Do not begin Figma implementation until the Design Completion Gate has passed and the structured design document exists. Figma output must be based on the approved design images and structured design document; HTML may be used as an implementation source only after it has been generated from those approved design artifacts. After Figma output is generated, update the structured design document with the Figma link and audit notes.
+Do not begin Figma implementation until the Design Completion Gate has passed, the structured design document exists, and the React prototype has passed visual parity and interaction audit. Figma output must be based on the approved design images, structured design document, and React prototype. After Figma output is generated, update the structured design document with the Figma link and audit notes.
 
 ## Output Checklist
 
@@ -231,11 +249,12 @@ Before finishing, report:
 - SubAgent direct-use status and any technical blockers.
 - `requested_output_language`.
 - Custom style directions explored, style samples generated, selected style, and whether the user confirmed it.
-- Page coverage count: source required pages, page briefs, worker results, approved/blocked/deferred pages, HTML routes.
+- Page coverage count: source required pages, page briefs, worker results, approved/blocked/deferred pages, React routes.
 - Script gate results: `ui-run.json`, latest validation report, and prototype-data report.
 - Pages generated and each page's review status.
 - Design Completion Gate result.
 - Structured design document path.
-- HTML prototype folder path and Final Functional Audit result.
+- React prototype folder path, run command, and Final Functional Audit result.
+- Feishu/Lark document link or "not uploaded because not requested".
 - Figma link or "not generated because not requested/provided".
 - Known residual risks, blocked pages, infeasible pages, or user-approved deferred pages.

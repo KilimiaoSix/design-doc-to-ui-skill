@@ -13,6 +13,7 @@ skills/
     agents/
     references/
     assets/
+    scripts/
 ```
 
 ## What It Does
@@ -22,11 +23,12 @@ skills/
 - source-backed page inventory and requirements summary;
 - scripted `ui-run.json` manifests and gate validation;
 - custom style exploration with SubAgent-generated visual samples;
-- one approved UI image per required page;
+- one imagegen-generated and reviewed UI image per required page;
 - per-page SubAgent review records;
-- structured design documentation in the request language;
-- real interactive local HTML prototypes;
-- optional Figma prototype output when requested.
+- structured design documentation in the request language, with the generated page images embedded;
+- a runnable local React frontend project that visually recreates the approved AI page images and implements interactions;
+- optional Feishu/Lark document upload when requested;
+- optional Figma output when requested, matching the React prototype's style and interaction model.
 
 The skill is intentionally strict: it blocks incomplete delivery instead of silently reducing scope to a small pilot flow.
 
@@ -35,11 +37,11 @@ The skill is intentionally strict: it blocks incomplete delivery instead of sile
 - Every required source page must have its own page brief.
 - Every required page image must be generated and reviewed by a page-level SubAgent.
 - At most 6 SubAgents may be active at the same time; larger runs are batched.
-- HTML and Figma prototypes start only after the design images and structured design document are complete.
-- `validate_design_run.py` blocks HTML/Figma until page briefs, worker artifacts, final images, main audit, and the structured design document all exist.
-- `build_prototype_data.py` generates route data from the approved run package so required pages are not dropped during HTML implementation.
-- HTML prototypes must use real components and interactions, not full-screen screenshot switching.
-- Final docs and prototype metadata follow the user's request language.
+- React and Figma work starts only after the design images, main audit, and structured design document are complete.
+- `validate_design_run.py` blocks React/Figma until page briefs, worker artifacts, final images, main audit, and the structured design document all exist.
+- `build_prototype_data.py --template react --copy-template` generates a Vite React starter and route data from the approved run package so required pages are not dropped.
+- The React prototype must use real components and interactions, not full-screen screenshot switching.
+- Final docs, React metadata, and optional Feishu/Figma outputs follow the user's request language.
 
 ## Install
 
@@ -86,20 +88,22 @@ Restart Codex after updating.
 Ask Codex to use the skill with a source document, for example:
 
 ```text
-Use $design-doc-to-ui to convert this PRD into a full reviewed mobile app UI package and interactive HTML prototype.
+Use $design-doc-to-ui to convert this PRD into a reviewed mobile app UI package with a structured design document and runnable React prototype.
 ```
 
 The skill will:
 
 1. ingest the source document and assets;
 2. derive a complete page inventory and initialize `ui-run.json`;
-3. explore and sample custom visual directions;
+3. explore and sample custom visual directions through SubAgents;
 4. generate and review every required page image with SubAgents;
 5. register every worker result in the manifest;
-6. write the structured design document;
+6. write the structured design document with page images;
 7. run the design-completion script gate;
-8. build the HTML prototype from approved design images and documentation;
-9. optionally create or update Figma output when requested.
+8. build a local React prototype from approved design images and documentation;
+9. run a React visual parity and interaction audit;
+10. optionally upload to Feishu/Lark only when requested;
+11. optionally create or update Figma output only when requested.
 
 ## Scripted Gates
 
@@ -110,10 +114,10 @@ python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-d
 python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/minihire
 python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/minihire --page-id home
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
-python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --copy-template
+python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
 ```
 
-These scripts enforce the HatchPet-style manifest pattern: page count stays dynamic, but `page_inventory` becomes the single source of truth for worker jobs, approved images, docs, routes, and HTML/Figma eligibility.
+These scripts enforce the HatchPet-style manifest pattern: page count stays dynamic, but `page_inventory` becomes the single source of truth for worker jobs, approved images, docs, React routes, and React/Figma eligibility.
 
 ## Validation
 
@@ -127,8 +131,9 @@ Representative script checks:
 
 - `prepare_ui_run.py` extracts a MiniHire fixture into 7 required pages.
 - `ui_job_status.py --batch-size 12` caps the next worker batch at 6.
-- `validate_design_run.py --phase design-completion` returns `html_allowed=false` before design artifacts and docs exist.
+- `validate_design_run.py --phase design-completion` returns `react_allowed=false` before design artifacts and docs exist.
 - With mock worker artifacts, locked style contract, main audit, and structured design doc, the gate passes.
+- `build_prototype_data.py --template react --copy-template` creates a runnable React project with all required routes.
 - Missing brief, worker result, final image, structured doc, or prototype route each produce explicit blocker codes.
 
 Expected result:

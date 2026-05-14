@@ -1,6 +1,6 @@
 # Design Doc To UI Skill 中文文档
 
-这是一个可安装的 Codex Skill，用于把产品需求文档、设计文档和原型资料转换成完整、经过评审的 UI 设计交付包。
+这是一个可安装的 Codex Skill，用于把产品需求文档、设计文档、原型资料和品牌素材转换成完整、经过评审的 UI 设计交付包。
 
 仓库采用通用 Codex Skill 发布结构：
 
@@ -11,6 +11,7 @@ skills/
     agents/
     references/
     assets/
+    scripts/
 ```
 
 ## 能做什么
@@ -20,24 +21,25 @@ skills/
 - 基于源文档的页面清单和需求摘要；
 - 脚本化的 `ui-run.json` manifest 和门禁校验；
 - 定制化视觉风格探索与 SubAgent 生图打样；
-- 每个必需页面一张通过评审的 UI 设计图；
+- 每个 required 页面一张由 imagegen 生成并通过评审的 UI 设计图；
 - 每页独立的 SubAgent 评审记录；
-- 与请求语言一致的结构化设计文档；
-- 真实可交互的本地 HTML 原型；
-- 用户明确要求时生成或同步 Figma 原型。
+- 与请求语言一致的结构化设计文档，并嵌入各页面生成图；
+- 可本地运行的 React 小前端项目，用组件复刻已批准 AI 页面图并实现交互；
+- 用户明确要求时，上传到飞书/Lark 文档；
+- 用户明确要求时，生成或同步 Figma，并复刻 React 原型的样式和交互机制。
 
-这个 skill 的策略比较严格：如果页面不完整、评审证据缺失、设计图未完成，它会阻断交付，而不是静默缩小为一个简单 pilot 流程。
+这个 skill 的策略比较严格：如果页面不完整、评审证据缺失、设计图未完成或文档未完成，会阻断交付，而不是静默缩小为一个 pilot 流程。
 
 ## 核心保证
 
 - 源文档中的每个 required 页面都必须有独立 page brief。
 - 每个 required 页面设计图都必须由页面级 SubAgent 生成并评审。
 - 同一时间最多 6 个活跃 SubAgent；页面较多时必须分批执行。
-- HTML 和 Figma 原型只能在全部必需设计图和结构化设计文档完成后开始。
-- `validate_design_run.py` 会在 page brief、worker 产物、最终图片、主审计和结构化设计文档未齐全时阻断 HTML/Figma。
-- `build_prototype_data.py` 会从已批准的 run 产物生成 route 数据，避免 HTML 阶段漏掉 required 页面。
-- HTML 原型必须使用真实组件和交互，不能只是整页截图切换器。
-- 最终文档、HTML 元数据和原型说明必须跟随用户请求语言。
+- React 和 Figma 只能在全部必需设计图、主审计和结构化设计文档完成后开始。
+- `validate_design_run.py` 会在 page brief、worker 产物、最终图片、主审计和结构化设计文档未齐全时阻断 React/Figma。
+- `build_prototype_data.py --template react --copy-template` 会从已批准的 run 产物生成 Vite React 项目和 route 数据，避免 React 阶段漏掉 required 页面。
+- React 原型必须使用真实组件和交互，不能只是整页截图切换器。
+- 最终文档、React 元数据、可选飞书/Figma 输出必须跟随用户请求语言。
 
 ## 安装
 
@@ -92,13 +94,13 @@ python "$env:USERPROFILE\.codex\skills\.system\skill-installer\scripts\install-s
 给 Codex 一个源文档，并明确使用该 skill，例如：
 
 ```text
-Use $design-doc-to-ui to convert this PRD into a full reviewed mobile app UI package and interactive HTML prototype.
+Use $design-doc-to-ui to convert this PRD into a reviewed mobile app UI package with a structured design document and runnable React prototype.
 ```
 
 中文也可以：
 
 ```text
-请使用 $design-doc-to-ui，把这个产品需求文档转换成完整的移动端 APP UI 设计稿、结构化设计文档和可交互 HTML 原型。
+请使用 $design-doc-to-ui，把这个产品需求文档转换成完整的移动端 APP UI 设计稿、结构化设计文档和可运行 React 原型。
 ```
 
 skill 会按以下顺序执行：
@@ -111,24 +113,26 @@ skill 会按以下顺序执行：
 6. 每个页面使用独立 SubAgent 生图和评审；
 7. 主线程用脚本登记每个 worker 结果；
 8. 主线程做整体功能与一致性审查；
-9. 生成结构化设计文档；
+9. 生成结构化设计文档并嵌入页面图；
 10. 运行设计完成门禁；
-11. 基于已批准设计图和结构化文档生成 HTML 原型；
-12. 用户要求时再生成或同步 Figma 原型。
+11. 基于已批准设计图和结构化文档生成 React 原型；
+12. 本地运行 React，做视觉复刻和交互审计；
+13. 用户要求时再上传飞书；
+14. 用户要求时再生成或同步 Figma。
 
 ## 脚本化门禁
 
-Skill 内置了确定性的 helper 脚本，位置在 `skills/design-doc-to-ui/scripts/`：
+Skill 内置确定性的 helper 脚本，位置在 `skills/design-doc-to-ui/scripts/`：
 
 ```bash
 python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-dir out/minihire --requested-output-language zh-CN
 python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/minihire
 python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/minihire --page-id home
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
-python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --copy-template
+python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
 ```
 
-这套脚本借鉴 HatchPet 的 manifest 模式：页面数量仍然由设计文档决定，不写死；但 `page_inventory` 会成为 worker 任务、已批准图片、结构化文档、HTML route 和 Figma/HTML 准入的唯一事实来源。
+这套脚本借鉴 HatchPet 的 manifest 模式：页面数量仍然由设计文档决定，不写死；但 `page_inventory` 会成为 worker 任务、已批准图片、结构化文档、React route 和 React/Figma 准入的唯一事实来源。
 
 ## 关键流程约束
 
@@ -147,9 +151,9 @@ python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/min
 - 同一时间最多 6 个活跃 SubAgent。
 - 主线程不能替代 SubAgent 调用 `image_gen` 生成最终 UI 图。
 
-### HTML/Figma 顺序
+### React/Figma 顺序
 
-HTML 和 Figma 不能在设计图完成前启动。
+React 和 Figma 不能在设计图完成前启动。
 
 必须先满足：
 
@@ -159,7 +163,7 @@ HTML 和 Figma 不能在设计图完成前启动。
 - 主线程整体审查通过；
 - 结构化设计文档已生成。
 
-之后才能基于“已批准设计图 + 结构化设计文档”实现 HTML 或 Figma 原型。
+之后才能基于“已批准设计图 + 结构化设计文档”实现 React 或 Figma 原型。Figma 只有在用户明确要求时才生成，并且必须复刻 React 的样式和交互机制。
 
 ## 校验
 
@@ -173,8 +177,9 @@ python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/de
 
 - `prepare_ui_run.py` 能把 MiniHire fixture 解析为 7 个 required 页面。
 - `ui_job_status.py --batch-size 12` 会把下一批 worker 限制为最多 6 个。
-- `validate_design_run.py --phase design-completion` 会在设计图和文档不完整时返回 `html_allowed=false`。
+- `validate_design_run.py --phase design-completion` 会在设计图和文档不完整时返回 `react_allowed=false`。
 - 补齐 mock worker 产物、锁定风格约定、主审计和结构化设计文档后，设计完成门禁通过。
+- `build_prototype_data.py --template react --copy-template` 会生成包含全部 required route 的 React 项目。
 - 缺 page brief、缺 worker-result、缺 final image、缺结构化设计文档、缺 prototype route 都会输出明确 blocker code。
 
 期望输出：

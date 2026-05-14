@@ -114,6 +114,7 @@ def page_slug_from_name(name: str, index: int) -> str:
         ("主页", "home"),
         ("详情", "detail"),
         ("岗位", "job-detail"),
+        ("职位", "job-detail"),
         ("面试准备", "interview-prep"),
         ("准备", "prep"),
         ("复盘", "review"),
@@ -305,7 +306,7 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
     status["main_audit_passed"] = audit_passed(run_dir, manifest)
     status["structured_design_doc_ready"] = structured_doc_ready(run_dir, manifest)
     status["no_active_subagents"] = not active_subagents(manifest)
-    status["html_allowed"] = all(
+    allowed = all(
         [
             status["style_contract_locked"],
             status["all_page_briefs_ready"],
@@ -315,4 +316,7 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
             status["no_active_subagents"],
         ]
     )
+    status["react_allowed"] = allowed
+    # Kept as html_allowed for backward compatibility with existing manifests.
+    status["html_allowed"] = allowed
     return status

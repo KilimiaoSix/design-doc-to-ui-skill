@@ -1,6 +1,6 @@
 # Main-Agent Audit
 
-Run this after all page workers return and before writing the final design document or HTML prototype.
+Run this after all page workers return and before writing the final design document or React prototype.
 
 When a scripted run exists, run `scripts/ui_job_status.py --run-dir <output-run-dir>` before the audit and use `ui-run.json` as the page/artifact inventory.
 
@@ -23,7 +23,7 @@ Verify these counts and mappings:
 - Required page brief count equals worker-result count, excluding only `user-approved deferred` pages.
 - Every non-deferred required page has a final image file.
 - Every non-deferred required page appears in the design document plan.
-- Every non-deferred required page has a planned HTML route/view.
+- Every non-deferred required page has a planned React route/view.
 
 Missing pages are blocking failures. A missing page may be reported only as `blocked`, `infeasible`, or `user-approved deferred`; it must not be counted as approved.
 
@@ -37,7 +37,7 @@ Missing pages are blocking failures. A missing page may be reported only as `blo
 - Text is readable, uses `requested_output_language`, and does not introduce unsupported claims.
 - AI artifacts, layout breaks, fake words, and poster-like compositions are absent.
 - Endpoint-specific constraints are respected.
-- Important success, error, empty, blocked, modal, and loading states are covered by page images or by the HTML prototype plan.
+- Important success, error, empty, blocked, modal, and loading states are covered by page images or by the React prototype plan.
 
 ## Failure Handling
 
@@ -59,11 +59,11 @@ If a page fails:
 4. If repeated attempts fail, reassess feasibility.
 5. Mark infeasible only after explaining the exact blocker and a practical alternative.
 
-Main-agent approval is required before generating final design documents and HTML prototype.
+Main-agent approval is required before generating final design documents and React prototype.
 
 ## Design Completion Gate
 
-Before writing the structured design document, HTML prototype, or Figma prototype, verify:
+Before writing the structured design document, React prototype, or Figma prototype, verify:
 
 - `global_style_contract` is locked.
 - Every non-deferred required page has an approved worker result and final image.
@@ -71,7 +71,7 @@ Before writing the structured design document, HTML prototype, or Figma prototyp
 - No required page is missing a brief, worker result, review, prompt history, or final image.
 - No style-sampling, page-generation, or regeneration SubAgent is still running.
 
-If this gate fails, do not start HTML or Figma work. A partial prototype is allowed only after the user explicitly approves partial output with the missing pages listed.
+If this gate fails, do not start React or Figma work. A partial prototype is allowed only after the user explicitly approves partial output with the missing pages listed.
 
 After the structured design document is written, enforce the gate with:
 
@@ -79,18 +79,19 @@ After the structured design document is written, enforce the gate with:
 python scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion
 ```
 
-Treat `passed: false` or `html_allowed: false` as blocking. Do not start HTML/Figma from requirements alone.
+Treat `passed: false` or `react_allowed: false` as blocking. Existing manifests may also expose `html_allowed` with the same value. Do not start React/Figma from requirements alone.
 
 ## Final Functional Audit
 
-Run this after creating the HTML prototype:
+Run this after creating the React prototype:
 
 - Open or inspect the prototype when browser tools are available.
 - Verify every non-deferred required page has a route/view.
 - Click or inspect every main navigation target and primary action.
 - Verify form controls, selectors, tabs, dialogs, toasts, and declared page states work.
 - Verify visible UI copy, document title, HTML `lang`, navigation labels, metadata, and review labels use `requested_output_language`.
+- Verify rendered React screenshots visually recreate the approved AI page images.
 - Verify screenshots are not the main UI implementation. Full-page images may appear only as visual references, thumbnails, or review attachments.
 - Record pass/fail results and required fixes.
 
-Do not mark the delivery complete until the Final Functional Audit passes or every failed item is explicitly blocked with a reason.
+Do not mark the delivery complete until the Final Functional Audit and React Visual Parity Gate pass or every failed item is explicitly blocked with a reason.

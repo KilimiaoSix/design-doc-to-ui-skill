@@ -86,6 +86,7 @@ def main() -> int:
         "status": page["status"],
         "final_image": artifacts["final_image_path"],
         "final_image_sha256": artifacts["final_image_sha256"],
+        "react_allowed": manifest["phase_status"].get("react_allowed", False),
         "html_allowed": manifest["phase_status"].get("html_allowed", False),
     }
     print(json.dumps(output, ensure_ascii=False))

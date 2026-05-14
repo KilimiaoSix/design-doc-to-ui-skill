@@ -53,9 +53,12 @@ def extract_pages_from_text(text: str, default_endpoint: str) -> list[dict[str, 
     used: set[str] = set()
     in_page_section = False
 
-    page_section_pattern = re.compile(r"^\s{0,3}#{0,6}\s*(页面|页面清单|原型页|需求页|screens?|pages?)\s*[:：]?\s*$", re.I)
+    page_section_pattern = re.compile(
+        r"^\s{0,3}#{0,6}\s*(页面|页面清单|原型页|需求页|screens?|pages?)\s*[:：]?\s*$",
+        re.I,
+    )
     numbered_pattern = re.compile(
-        r"^\s*(?:[-*]|\d+[.)、])\s*(?P<name>[^:：\n]+?)\s*(?:[:：-]\s*(?P<desc>.*))?$"
+        r"^\s*(?:[-*]|\d+[.)、])\s*(?P<name>[^:：\n]+?)\s*(?:[:：]\s*(?P<desc>.*))?$"
     )
     heading_pattern = re.compile(r"^\s{0,3}#{2,6}\s*(?P<name>.+?(?:页|页面|screen|page))\s*$", re.I)
 
@@ -154,9 +157,9 @@ def brief_for_page(page: dict[str, Any], output_language: str) -> dict[str, Any]
         else f"Represent the {page_name} requirements from the source document."
     )
     default_state_description = (
-        "设计图和 HTML 原型必须覆盖该页面的默认状态。"
+        "设计图和 React 原型必须覆盖该页面的默认状态。"
         if is_chinese
-        else "Default page state required for design and prototype coverage."
+        else "Default page state required for design and React prototype coverage."
     )
     return {
         "page_id": page_id,
@@ -221,7 +224,16 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
         "limits": {
             "max_active_subagents": 6,
         },
+        "prototype_policy": {
+            "framework": "react",
+            "requires_design_completion": True,
+            "requires_visual_parity_audit": True,
+            "allow_partial_prototype": False,
+            "partial_prototype_approval": None,
+        },
         "html_policy": {
+            "legacy_field": True,
+            "superseded_by": "prototype_policy",
             "requires_design_completion": True,
             "allow_partial_prototype": False,
             "partial_prototype_approval": None,
@@ -242,7 +254,7 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "main_audit": "qa/main-audit.json",
             "structured_design_doc": "qa/structured-design-doc.md",
             "validation_report": "qa/validation-report.json",
-            "prototype_data": "prototype/prototype-data.js",
+            "prototype_data": "prototype/src/prototype-data.js",
             "prototype_data_report": "prototype/prototype-data-report.json",
         },
         "active_subagents": [],
@@ -255,6 +267,7 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "main_audit_passed": False,
             "structured_design_doc_ready": False,
             "no_active_subagents": True,
+            "react_allowed": False,
             "html_allowed": False,
             "prototype_data_ready": False,
         },

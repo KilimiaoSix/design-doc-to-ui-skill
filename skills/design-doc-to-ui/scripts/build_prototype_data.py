@@ -10,7 +10,6 @@ from _ui_run_lib import (
     load_json,
     load_manifest,
     page_artifacts,
-    page_is_worker_approved,
     refresh_phase_status,
     required_pages,
     resolve_run_path,
@@ -39,6 +38,7 @@ def labels_for(language: str) -> dict[str, str]:
             "noPages": "没有页面数据",
             "blocked": "阻断",
             "approved": "已通过",
+            "visualParity": "视觉复刻",
         }
     return {
         "pages": "Pages",
@@ -52,6 +52,7 @@ def labels_for(language: str) -> dict[str, str]:
         "noPages": "No page data",
         "blocked": "Blocked",
         "approved": "Approved",
+        "visualParity": "Visual parity",
     }
 
 
@@ -62,7 +63,7 @@ def read_brief(run_dir: Path, page: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def rel_from_prototype(run_dir: Path, prototype_dir: Path, value: str | None) -> str:
+def rel_from_dir(run_dir: Path, output_dir: Path, value: str | None) -> str:
     path = resolve_run_path(run_dir, value)
     if not path:
         return ""
@@ -149,11 +150,26 @@ def brief_to_states(brief: dict[str, Any]) -> list[dict[str, str]]:
     return states or [{"name": "default", "description": ""}]
 
 
-def build_data(run_dir: Path, copy_template: bool) -> dict[str, Any]:
+def copy_template_files(skill_dir: Path, prototype_dir: Path, template: str) -> None:
+    template_dir = skill_dir / "assets" / ("react-prototype-template" if template == "react" else "html-prototype-template")
+    if not template_dir.exists():
+        raise FileNotFoundError(f"Missing prototype template: {template_dir}")
+    for source in template_dir.rglob("*"):
+        if source.is_dir():
+            continue
+        relative = source.relative_to(template_dir)
+        target = prototype_dir / relative
+        if target.exists():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+
+def build_data(run_dir: Path, copy_template: bool, template: str) -> dict[str, Any]:
     manifest = load_manifest(run_dir)
     phase_status = refresh_phase_status(manifest, run_dir)
-    if not phase_status.get("html_allowed"):
-        raise SystemExit("HTML is blocked: run validate_design_run.py --phase design-completion and fix blockers first.")
+    if not phase_status.get("react_allowed", phase_status.get("html_allowed")):
+        raise SystemExit("React is blocked: run validate_design_run.py --phase design-completion and fix blockers first.")
 
     language = manifest.get("requested_output_language") or manifest.get("source", {}).get("source_language") or "zh-CN"
     page_ids = {str(page.get("page_id")) for page in required_pages(manifest)}
@@ -161,12 +177,10 @@ def build_data(run_dir: Path, copy_template: bool) -> dict[str, Any]:
     prototype_dir.mkdir(parents=True, exist_ok=True)
 
     if copy_template:
-        template_dir = Path(__file__).resolve().parents[1] / "assets" / "html-prototype-template"
-        for name in ["index.html", "styles.css"]:
-            source = template_dir / name
-            target = prototype_dir / name
-            if source.exists() and not target.exists():
-                shutil.copy2(source, target)
+        copy_template_files(Path(__file__).resolve().parents[1], prototype_dir, template)
+
+    data_output_dir = prototype_dir / "src" if template == "react" else prototype_dir
+    data_output_dir.mkdir(parents=True, exist_ok=True)
 
     pages = []
     missing_images = []
@@ -177,7 +191,8 @@ def build_data(run_dir: Path, copy_template: bool) -> dict[str, Any]:
         brief = read_brief(run_dir, page)
         artifacts = page_artifacts(page)
         final_image = artifacts.get("final_image_path")
-        if not final_image or not (resolve_run_path(run_dir, final_image) or Path()).exists():
+        image_path = resolve_run_path(run_dir, final_image)
+        if not final_image or not image_path or not image_path.exists():
             missing_images.append(page.get("page_id"))
         actions = interactions_to_actions(brief, page_ids, language)
         if not actions:
@@ -197,39 +212,52 @@ def build_data(run_dir: Path, copy_template: bool) -> dict[str, Any]:
             "sections": brief_to_sections(brief, language),
             "states": states,
             "actions": actions,
-            "referenceImage": rel_from_prototype(run_dir, prototype_dir, final_image),
+            "referenceImage": rel_from_dir(run_dir, data_output_dir, final_image),
+            "visualParityStatus": "needs_review",
         }
         pages.append(page_entry)
 
     title = manifest.get("product_name") or "Interactive Prototype"
     if is_chinese(language):
-        kicker = "交互原型"
-        summary = "基于已批准设计图、页面 brief、评审结果和结构化设计文档生成。"
+        kicker = "React 交互原型"
+        summary = "基于已批准 AI 原型图、页面 brief、评审结果和结构化设计文档生成；React 页面必须复刻 AI 原型图的视觉效果并补齐交互。"
+        data_title = f"{title} React 原型"
     else:
-        kicker = "Interactive Prototype"
-        summary = "Generated from approved design images, page briefs, reviews, and the structured design document."
+        kicker = "React Prototype"
+        summary = "Generated from approved AI UI images, page briefs, reviews, and the structured design document. React screens must visually recreate the approved images and add interactions."
+        data_title = f"{title} React Prototype"
 
     data = {
         "lang": language,
-        "title": f"{title} 原型" if is_chinese(language) else f"{title} Prototype",
+        "title": data_title,
         "kicker": kicker,
         "summary": summary,
         "labels": labels_for(language),
         "pages": pages,
     }
 
-    prototype_data_path = prototype_dir / "prototype-data.js"
-    write_text(prototype_data_path, "window.PROTOTYPE_DATA = " + json.dumps(data, ensure_ascii=False, indent=2) + ";\n")
+    prototype_data_path = data_output_dir / "prototype-data.js"
+    if template == "react":
+        text = (
+            "const prototypeData = "
+            + json.dumps(data, ensure_ascii=False, indent=2)
+            + ";\n\nwindow.PROTOTYPE_DATA = prototypeData;\nexport default prototypeData;\n"
+        )
+    else:
+        text = "window.PROTOTYPE_DATA = " + json.dumps(data, ensure_ascii=False, indent=2) + ";\n"
+    write_text(prototype_data_path, text)
 
     report = {
         "passed": not missing_images and not missing_states,
+        "template": template,
         "route_count": len(pages),
         "required_page_count": len(page_ids),
         "routes": [page["id"] for page in pages],
         "missing_images": missing_images,
         "missing_interactions": missing_interactions,
         "missing_states": missing_states,
-        "notes": "missing_interactions is advisory; implement dialogs/routes manually when briefs intentionally omit actions.",
+        "visual_parity_required": True,
+        "notes": "missing_interactions is advisory; visual parity must be audited after the React implementation is rendered.",
     }
     write_json(prototype_dir / "prototype-data-report.json", report)
 
@@ -242,12 +270,13 @@ def build_data(run_dir: Path, copy_template: bool) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build prototype-data.js from a completed design-doc-to-ui run.")
+    parser = argparse.ArgumentParser(description="Build prototype data from a completed design-doc-to-ui run.")
     parser.add_argument("--run-dir", required=True)
-    parser.add_argument("--copy-template", action="store_true", help="Copy index.html/styles.css from the bundled template if absent.")
+    parser.add_argument("--copy-template", action="store_true", help="Copy the bundled prototype template if absent.")
+    parser.add_argument("--template", choices=["react", "static"], default="react", help="Prototype template type. Default: react.")
     args = parser.parse_args()
 
-    report = build_data(Path(args.run_dir), args.copy_template)
+    report = build_data(Path(args.run_dir), args.copy_template, args.template)
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["passed"] else 1
 

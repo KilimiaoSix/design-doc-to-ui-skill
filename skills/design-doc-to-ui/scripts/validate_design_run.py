@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -61,17 +60,51 @@ def validate_worker(run_dir: Path, page: dict[str, Any], blockers: list[dict[str
         add(blockers, "WORKER_NOT_APPROVED", "Worker result is missing or not approved.", page.get("page_id"))
 
 
+def extract_js_object_after(text: str, marker: str) -> str | None:
+    start_marker = text.find(marker)
+    if start_marker < 0:
+        return None
+    start = text.find("{", start_marker)
+    if start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    quote = ""
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == quote:
+                in_string = False
+            continue
+        if char in {'"', "'"}:
+            in_string = True
+            quote = char
+            continue
+        if char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return None
+
+
 def prototype_routes(run_dir: Path, manifest: dict[str, Any]) -> set[str]:
     artifacts = manifest.get("artifacts") or {}
     path = resolve_run_path(run_dir, artifacts.get("prototype_data"))
     if not path or not path.exists():
         return set()
     text = path.read_text(encoding="utf-8", errors="ignore")
-    match = re.search(r"window\.PROTOTYPE_DATA\s*=\s*(\{.*\})\s*;?\s*$", text, re.S)
-    if not match:
+    object_text = extract_js_object_after(text, "window.PROTOTYPE_DATA") or extract_js_object_after(text, "const prototypeData")
+    if not object_text:
         return set()
     try:
-        data = json.loads(match.group(1))
+        data = json.loads(object_text)
     except Exception:
         return set()
     routes = set()
@@ -109,7 +142,8 @@ def validate(run_dir: Path, phase: str) -> dict[str, Any]:
         add(blockers, "STRUCTURED_DESIGN_DOC_MISSING", "Structured design document is missing.")
 
     phase_status = refresh_phase_status(manifest, run_dir)
-    html_allowed = not blockers and phase_status.get("html_allowed", False)
+    react_allowed = not blockers and phase_status.get("react_allowed", phase_status.get("html_allowed", False))
+    html_allowed = react_allowed
 
     if phase in {"prototype", "final"}:
         routes = prototype_routes(run_dir, manifest)
@@ -125,19 +159,21 @@ def validate(run_dir: Path, phase: str) -> dict[str, Any]:
         add(
             blockers,
             "DESIGN_COMPLETION_GATE_FAILED",
-            "HTML/Figma must remain blocked until all design artifacts, main audit, and structured design doc pass.",
+            "React/Figma must remain blocked until all design artifacts, main audit, and structured design doc pass.",
         )
 
     report = {
         "run_dir": str(run_dir),
         "phase": phase,
         "passed": not blockers,
+        "react_allowed": react_allowed,
         "html_allowed": html_allowed,
         "page_count": len(pages),
         "phase_status": phase_status,
         "blockers": blockers,
         "warnings": warnings,
     }
+    manifest["phase_status"]["react_allowed"] = react_allowed
     manifest["phase_status"]["html_allowed"] = html_allowed
     artifacts = manifest.get("artifacts") or {}
     report_path = resolve_run_path(run_dir, artifacts.get("validation_report")) or (run_dir / "qa" / "validation-report.json")
