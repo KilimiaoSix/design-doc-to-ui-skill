@@ -63,16 +63,6 @@ def read_brief(run_dir: Path, page: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def rel_from_dir(run_dir: Path, output_dir: Path, value: str | None) -> str:
-    path = resolve_run_path(run_dir, value)
-    if not path:
-        return ""
-    try:
-        return Path("../" + Path(to_run_relative(run_dir, path)).as_posix()).as_posix()
-    except Exception:
-        return path.as_posix()
-
-
 def interactions_to_actions(brief: dict[str, Any], page_ids: set[str], language: str) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     interactions = brief.get("prototype_interactions") or []
@@ -80,14 +70,14 @@ def interactions_to_actions(brief: dict[str, Any], page_ids: set[str], language:
     for index, interaction in enumerate(interactions, start=1):
         if not isinstance(interaction, dict):
             continue
-        target = str(interaction.get("target_route_or_state") or "").lstrip("#")
+        target = str(interaction.get("target_route_or_state") or interaction.get("target") or "").lstrip("#")
         action: dict[str, Any] = {
-            "label": interaction.get("trigger") or f"{default_label} {index}",
+            "label": interaction.get("trigger") or interaction.get("label") or f"{default_label} {index}",
         }
         if target in page_ids:
             action["target"] = target
         else:
-            result = interaction.get("result") or interaction.get("target_route_or_state") or ""
+            result = interaction.get("result") or interaction.get("target_route_or_state") or interaction.get("description") or ""
             action["dialog"] = result
         actions.append(action)
     return actions
@@ -108,10 +98,15 @@ def brief_to_sections(brief: dict[str, Any], language: str) -> list[dict[str, An
             if isinstance(value, dict):
                 item_title = value.get("title") or value.get("name") or value.get("label") or json.dumps(value, ensure_ascii=False)
                 desc = value.get("description") or value.get("body") or value.get("text") or ""
+                action = value.get("action")
             else:
                 item_title = str(value)
                 desc = ""
-            items.append({"title": item_title, "description": desc})
+                action = None
+            entry: dict[str, Any] = {"title": item_title, "description": desc}
+            if action:
+                entry["action"] = action
+            items.append(entry)
         sections.append({"title": title, "items": items})
 
     if is_chinese(language):
@@ -150,6 +145,22 @@ def brief_to_states(brief: dict[str, Any]) -> list[dict[str, str]]:
     return states or [{"name": "default", "description": ""}]
 
 
+def brief_to_controls(brief: dict[str, Any]) -> list[dict[str, Any]]:
+    controls = brief.get("controls") or brief.get("form_controls") or brief.get("input_controls") or []
+    if not isinstance(controls, list):
+        return []
+    result = []
+    for index, control in enumerate(controls, start=1):
+        if not isinstance(control, dict):
+            continue
+        entry = dict(control)
+        entry.setdefault("id", f"control-{index}")
+        entry.setdefault("type", "text")
+        entry.setdefault("label", entry["id"])
+        result.append(entry)
+    return result
+
+
 def copy_template_files(skill_dir: Path, prototype_dir: Path, template: str) -> None:
     template_dir = skill_dir / "assets" / ("react-prototype-template" if template == "react" else "html-prototype-template")
     if not template_dir.exists():
@@ -163,6 +174,25 @@ def copy_template_files(skill_dir: Path, prototype_dir: Path, template: str) -> 
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+
+
+def copy_reference_image(run_dir: Path, prototype_dir: Path, page: dict[str, Any], final_image: str | None, template: str) -> str:
+    image_path = resolve_run_path(run_dir, final_image)
+    if not final_image or not image_path or not image_path.exists():
+        return ""
+    suffix = image_path.suffix or ".png"
+    safe_page_id = str(page.get("page_id") or "page")
+    if template == "react":
+        target_dir = prototype_dir / "public" / "screens"
+        target = target_dir / f"{safe_page_id}{suffix}"
+        public_path = f"/screens/{target.name}"
+    else:
+        target_dir = prototype_dir / "screens"
+        target = target_dir / f"{safe_page_id}{suffix}"
+        public_path = f"./screens/{target.name}"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(image_path, target)
+    return public_path
 
 
 def build_data(run_dir: Path, copy_template: bool, template: str) -> dict[str, Any]:
@@ -194,6 +224,9 @@ def build_data(run_dir: Path, copy_template: bool, template: str) -> dict[str, A
         image_path = resolve_run_path(run_dir, final_image)
         if not final_image or not image_path or not image_path.exists():
             missing_images.append(page.get("page_id"))
+            reference_image = ""
+        else:
+            reference_image = copy_reference_image(run_dir, prototype_dir, page, final_image, template)
         actions = interactions_to_actions(brief, page_ids, language)
         if not actions:
             missing_interactions.append(page.get("page_id"))
@@ -208,11 +241,11 @@ def build_data(run_dir: Path, copy_template: bool, template: str) -> dict[str, A
             "status": page.get("status") or "approved",
             "headline": brief.get("page_name") or page.get("page_name"),
             "purpose": brief.get("purpose") or page.get("source_summary") or "",
-            "controls": [],
+            "controls": brief_to_controls(brief),
             "sections": brief_to_sections(brief, language),
             "states": states,
             "actions": actions,
-            "referenceImage": rel_from_dir(run_dir, data_output_dir, final_image),
+            "referenceImage": reference_image,
             "visualParityStatus": "needs_review",
         }
         pages.append(page_entry)

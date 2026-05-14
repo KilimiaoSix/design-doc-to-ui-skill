@@ -29,11 +29,14 @@ DIRECTORIES = [
     "qa",
 ]
 
-
 def detect_language(text: str) -> str:
     if re.search(r"[\u4e00-\u9fff]", text):
         return "zh-CN"
     return "en"
+
+
+def is_chinese(language: str) -> bool:
+    return language.lower().startswith("zh") or "中文" in language
 
 
 def extract_title(text: str, fallback: str) -> str:
@@ -48,15 +51,59 @@ def extract_title(text: str, fallback: str) -> str:
     return fallback
 
 
+def is_page_section_heading(line: str) -> bool:
+    stripped = line.strip().strip(":：")
+    stripped_lower = stripped.lower().lstrip("#").strip()
+    if not stripped_lower:
+        return False
+    section_labels = {
+        "页面",
+        "页面清单",
+        "页面列表",
+        "原型页",
+        "需求页",
+        "screens",
+        "screen list",
+        "pages",
+        "page list",
+        "prototype screens",
+        "required pages",
+    }
+    return stripped_lower in section_labels or any(word in stripped_lower for word in ["清单", "列表", "inventory"])
+
+
+def is_section_boundary(line: str) -> bool:
+    return bool(re.match(r"^\s{0,3}#{1,6}\s+", line))
+
+
+def make_page(name: str, default_endpoint: str, evidence: str, desc: str, pages: list[dict[str, Any]], used: set[str]) -> dict[str, Any]:
+    name = name.strip(" .:-：")
+    page_id = unique_page_id(page_slug_from_name(name, len(pages) + 1), used, len(pages) + 1)
+    return {
+        "page_id": page_id,
+        "page_name": name,
+        "endpoint": default_endpoint,
+        "priority": "must",
+        "required_for_delivery": True,
+        "source_evidence": [evidence.strip()],
+        "source_summary": desc.strip(),
+        "deferred_status": "not_deferred",
+        "deferred_reason": "",
+        "route": f"#{page_id}",
+        "status": "pending",
+        "artifacts": {
+            "brief_path": f"page-briefs/{page_id}.json",
+            "worker_dir": f"workers/{page_id}",
+            "design_image_target": f"design-images/{page_id}.png",
+        },
+    }
+
+
 def extract_pages_from_text(text: str, default_endpoint: str) -> list[dict[str, Any]]:
     pages: list[dict[str, Any]] = []
     used: set[str] = set()
     in_page_section = False
 
-    page_section_pattern = re.compile(
-        r"^\s{0,3}#{0,6}\s*(页面|页面清单|原型页|需求页|screens?|pages?)\s*[:：]?\s*$",
-        re.I,
-    )
     numbered_pattern = re.compile(
         r"^\s*(?:[-*]|\d+[.)、])\s*(?P<name>[^:：\n]+?)\s*(?:[:：]\s*(?P<desc>.*))?$"
     )
@@ -66,53 +113,33 @@ def extract_pages_from_text(text: str, default_endpoint: str) -> list[dict[str, 
         line = raw_line.strip()
         if not line:
             continue
-        if page_section_pattern.match(line):
+
+        if is_section_boundary(raw_line) and is_page_section_heading(raw_line):
             in_page_section = True
             continue
+
         heading = heading_pattern.match(raw_line)
-        if heading:
-            name = heading.group("name").strip(" :-：")
-            page_id = unique_page_id(page_slug_from_name(name, len(pages) + 1), used, len(pages) + 1)
-            pages.append(
-                {
-                    "page_id": page_id,
-                    "page_name": name,
-                    "endpoint": default_endpoint,
-                    "priority": "must",
-                    "required_for_delivery": True,
-                    "source_evidence": [line],
-                    "deferred_status": "not_deferred",
-                    "deferred_reason": "",
-                    "route": f"#{page_id}",
-                }
-            )
+        if heading and not is_page_section_heading(raw_line):
+            name = heading.group("name").strip(" .:-：")
+            if 1 <= len(name) <= 80:
+                pages.append(make_page(name, default_endpoint, line, "", pages, used))
             continue
+
         if not in_page_section:
             continue
+
+        if is_section_boundary(raw_line) and not is_page_section_heading(raw_line):
+            in_page_section = False
+            continue
+
         match = numbered_pattern.match(raw_line)
         if not match:
-            if re.match(r"^\s{0,3}#{1,6}\s+", raw_line):
-                in_page_section = False
             continue
         name = match.group("name").strip(" .:-：")
         if not name or len(name) > 80:
             continue
-        desc = (match.group("desc") or "").strip()
-        page_id = unique_page_id(page_slug_from_name(name, len(pages) + 1), used, len(pages) + 1)
-        pages.append(
-            {
-                "page_id": page_id,
-                "page_name": name,
-                "endpoint": default_endpoint,
-                "priority": "must",
-                "required_for_delivery": True,
-                "source_evidence": [raw_line.strip()],
-                "source_summary": desc,
-                "deferred_status": "not_deferred",
-                "deferred_reason": "",
-                "route": f"#{page_id}",
-            }
-        )
+        desc = match.group("desc") or ""
+        pages.append(make_page(name, default_endpoint, raw_line, desc, pages, used))
 
     return pages
 
@@ -123,6 +150,7 @@ def load_pages_json(path: Path, default_endpoint: str) -> list[dict[str, Any]]:
         data = data.get("pages") or data.get("page_inventory") or []
     if not isinstance(data, list):
         raise ValueError("--pages-json must contain an array or an object with pages/page_inventory")
+
     used: set[str] = set()
     pages = []
     for index, item in enumerate(data, start=1):
@@ -142,7 +170,12 @@ def load_pages_json(path: Path, default_endpoint: str) -> list[dict[str, Any]]:
             "deferred_status": item.get("deferred_status") or "not_deferred",
             "deferred_reason": item.get("deferred_reason") or "",
             "route": item.get("route") or f"#{page_id}",
+            "status": item.get("status") or "pending",
+            "artifacts": item.get("artifacts") if isinstance(item.get("artifacts"), dict) else {},
         }
+        page["artifacts"].setdefault("brief_path", f"page-briefs/{page_id}.json")
+        page["artifacts"].setdefault("worker_dir", f"workers/{page_id}")
+        page["artifacts"].setdefault("design_image_target", f"design-images/{page_id}.png")
         pages.append(page)
     return pages
 
@@ -150,17 +183,13 @@ def load_pages_json(path: Path, default_endpoint: str) -> list[dict[str, Any]]:
 def brief_for_page(page: dict[str, Any], output_language: str) -> dict[str, Any]:
     page_id = page["page_id"]
     page_name = page["page_name"]
-    is_chinese = output_language.lower().startswith("zh") or "中文" in output_language
-    default_purpose = (
-        f"根据源文档要求呈现{page_name}。"
-        if is_chinese
-        else f"Represent the {page_name} requirements from the source document."
-    )
-    default_state_description = (
-        "设计图和 React 原型必须覆盖该页面的默认状态。"
-        if is_chinese
-        else "Default page state required for design and React prototype coverage."
-    )
+    if is_chinese(output_language):
+        default_purpose = f"根据源文档要求呈现{page_name}。"
+        default_state_description = "设计图和 React 原型必须覆盖该页面的默认状态。"
+    else:
+        default_purpose = f"Represent the {page_name} requirements from the source document."
+        default_state_description = "Default page state required for design and React prototype coverage."
+
     return {
         "page_id": page_id,
         "page_name": page_name,
@@ -201,14 +230,25 @@ def brief_for_page(page: dict[str, Any], output_language: str) -> dict[str, Any]
     }
 
 
+def companion_entry(skill_name: str) -> dict[str, Any]:
+    return {
+        "skill_name": skill_name,
+        "required": True,
+        "loaded": False,
+        "path": "",
+        "status": "pending",
+        "blocker": "",
+    }
+
+
 def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[str, Any]]) -> dict[str, Any]:
     source_language = args.source_language or detect_language(source_text)
     output_language = args.requested_output_language or source_language
-    title = args.source_title or extract_title(source_text, Path(args.source).stem if args.source else "Source document")
+    title = args.source_title or extract_title(source_text, Path(args.source).stem)
     product_name = args.product_name or title
 
-    manifest = {
-        "schema_version": "1.0",
+    return {
+        "schema_version": "1.1",
         "run_kind": "design-doc-to-ui",
         "created_at": now_iso(),
         "product_name": product_name,
@@ -228,6 +268,7 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "framework": "react",
             "requires_design_completion": True,
             "requires_visual_parity_audit": True,
+            "visual_similarity_threshold": 0.80,
             "allow_partial_prototype": False,
             "partial_prototype_approval": None,
         },
@@ -238,136 +279,125 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "allow_partial_prototype": False,
             "partial_prototype_approval": None,
         },
-        "directories": {
-            "source": "source",
-            "page_briefs": "page-briefs",
-            "style_samples": "style-samples",
-            "workers": "workers",
-            "design_images": "design-images",
-            "prototype": "prototype",
-            "qa": "qa",
+        "companion_skills": {
+            "feishu_doc": companion_entry("design-doc-to-ui-feishu-doc"),
+            "figma_replica": companion_entry("design-doc-to-ui-figma-replica"),
+            "visual_audit": companion_entry("design-doc-to-ui-visual-audit"),
         },
+        "delivery_channels": {
+            "feishu": {
+                "requested": bool(args.request_feishu),
+                "status": "pending" if args.request_feishu else "not_requested",
+                "audit_path": "qa/feishu-doc-audit.json",
+            },
+            "figma": {
+                "requested": bool(args.request_figma),
+                "status": "pending" if args.request_figma else "not_requested",
+                "audit_path": "qa/figma-replica-audit.json",
+            },
+        },
+        "directories": {name.replace("-", "_"): name for name in DIRECTORIES},
         "artifacts": {
-            "app_requirements_summary": "source/app_requirements_summary.json",
-            "source_bundle": "source/source-bundle.json",
-            "global_style_contract": "style-samples/global-style-contract.json",
+            "app_requirements_summary": "source/app-requirements-summary.json",
+            "global_style_contract": "qa/global-style-contract.json",
+            "design_thinking_map": "qa/design-thinking-map.md",
             "main_audit": "qa/main-audit.json",
             "structured_design_doc": "qa/structured-design-doc.md",
             "validation_report": "qa/validation-report.json",
+            "companion_skill_report": "qa/companion-skill-report.json",
+            "visual_parity_audit": "qa/visual-parity-audit.json",
+            "feishu_doc_audit": "qa/feishu-doc-audit.json",
+            "figma_replica_audit": "qa/figma-replica-audit.json",
             "prototype_data": "prototype/src/prototype-data.js",
             "prototype_data_report": "prototype/prototype-data-report.json",
         },
-        "active_subagents": [],
-        "page_inventory": [],
         "phase_status": {
-            "requirements_prepared": True,
+            "app_requirements_summary_ready": True,
+            "page_inventory_ready": bool(pages),
             "style_contract_locked": False,
             "all_page_briefs_ready": False,
             "all_required_designs_approved": False,
             "main_audit_passed": False,
             "structured_design_doc_ready": False,
-            "no_active_subagents": True,
             "react_allowed": False,
             "html_allowed": False,
             "prototype_data_ready": False,
+            "visual_parity_passed": False,
+            "delivery_passed": False,
         },
+        "active_subagents": [],
+        "subagent_batches": [],
+        "page_inventory": pages,
     }
 
-    for page in pages:
-        page_id = page["page_id"]
-        worker_dir = f"workers/{page_id}"
-        enriched = dict(page)
-        enriched["artifacts"] = {
-            "brief_path": f"page-briefs/{page_id}.json",
-            "worker_dir": worker_dir,
-            "worker_result_path": f"{worker_dir}/worker-result.json",
-            "review_path": f"{worker_dir}/review.md",
-            "prompt_history_path": f"{worker_dir}/prompt-history.md",
-            "final_image_path": f"design-images/{page_id}.png",
-            "final_image_sha256": "",
-            "main_audit_status": "pending",
-        }
-        enriched["status"] = "pending"
-        manifest["page_inventory"].append(enriched)
 
-    return manifest
+def write_brief_stubs(run_dir: Path, manifest: dict[str, Any]) -> None:
+    output_language = manifest.get("requested_output_language") or "zh-CN"
+    for page in manifest.get("page_inventory") or []:
+        artifacts = page.setdefault("artifacts", {})
+        page_id = page["page_id"]
+        brief_path = run_dir / str(artifacts.get("brief_path") or f"page-briefs/{page_id}.json")
+        artifacts["brief_path"] = str(brief_path.relative_to(run_dir)).replace("\\", "/")
+        artifacts.setdefault("worker_dir", f"workers/{page_id}")
+        artifacts.setdefault("design_image_target", f"design-images/{page_id}.png")
+        write_json(brief_path, brief_for_page(page, output_language))
+
+
+def app_requirements_summary(manifest: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "product_name": manifest.get("product_name"),
+        "source_language": (manifest.get("source") or {}).get("source_language"),
+        "requested_output_language": manifest.get("requested_output_language"),
+        "page_inventory": manifest.get("page_inventory") or [],
+        "delivery_channels": manifest.get("delivery_channels") or {},
+        "prototype_policy": manifest.get("prototype_policy") or {},
+    }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Prepare a design-doc-to-ui run manifest.")
-    parser.add_argument("--source", help="Source requirements/design document path.")
-    parser.add_argument("--source-text", help="Inline source text. Prefer --source for real runs.")
-    parser.add_argument("--pages-json", help="Optional JSON page inventory override.")
+    parser = argparse.ArgumentParser(description="Initialize a design-doc-to-ui scripted run directory.")
+    parser.add_argument("--source", required=True, help="Source PRD/design document path.")
     parser.add_argument("--run-dir", required=True, help="Output run directory.")
-    parser.add_argument("--product-name", default="")
-    parser.add_argument("--source-title", default="")
-    parser.add_argument("--source-type", default="markdown")
-    parser.add_argument("--source-language", default="")
-    parser.add_argument("--requested-output-language", default="")
-    parser.add_argument("--default-endpoint", default="mobile", choices=["web", "pc", "mobile", "tablet"])
-    parser.add_argument("--platforms", nargs="*", default=["mobile"])
+    parser.add_argument("--requested-output-language", help="Design document and prototype language. Defaults to source language.")
+    parser.add_argument("--source-language", help="Override detected source language.")
+    parser.add_argument("--source-title", help="Override source title.")
+    parser.add_argument("--product-name", help="Override product name.")
+    parser.add_argument("--source-type", default="markdown", help="Source type label.")
+    parser.add_argument("--pages-json", help="Optional extracted page inventory JSON.")
+    parser.add_argument("--platforms", nargs="+", default=["mobile"], help="Target platform labels.")
+    parser.add_argument("--default-endpoint", default="mobile", help="Default endpoint for pages.")
     parser.add_argument("--write-brief-stubs", action="store_true", help="Write draft page brief JSON files.")
+    parser.add_argument("--request-feishu", action="store_true", help="Mark Feishu delivery as requested.")
+    parser.add_argument("--request-figma", action="store_true", help="Mark Figma delivery as requested.")
     args = parser.parse_args()
 
-    if not args.source and not args.source_text:
-        parser.error("Provide --source or --source-text")
-
-    source_text = args.source_text or Path(args.source).read_text(encoding="utf-8-sig")
+    source_path = Path(args.source)
+    source_text = source_path.read_text(encoding="utf-8")
     run_dir = Path(args.run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     ensure_dirs(run_dir, DIRECTORIES)
 
-    pages = (
-        load_pages_json(Path(args.pages_json), args.default_endpoint)
-        if args.pages_json
-        else extract_pages_from_text(source_text, args.default_endpoint)
+    pages = load_pages_json(Path(args.pages_json), args.default_endpoint) if args.pages_json else extract_pages_from_text(
+        source_text, args.default_endpoint
     )
-    if not pages:
-        raise SystemExit("No pages found. Provide --pages-json or add a source page inventory.")
-
     manifest = build_manifest(args, source_text, pages)
+
     write_text(run_dir / "source" / "source.md", source_text)
-
-    source_bundle = {
-        "source_type": args.source_type,
-        "source_refs": [args.source] if args.source else [],
-        "raw_sections": [],
-        "tables": [],
-        "images": [],
-        "links": [],
-        "constraints": [],
-        "open_questions": [],
-    }
-    write_json(run_dir / "source" / "source-bundle.json", source_bundle)
-
-    summary = {
-        "product_name": manifest["product_name"],
-        "source_language": manifest["source"]["source_language"],
-        "requested_output_language": manifest["requested_output_language"],
-        "target_users": [],
-        "core_scenarios": [],
-        "business_goals": [],
-        "page_list": [page["page_name"] for page in manifest["page_inventory"]],
-        "page_inventory": manifest["page_inventory"],
-        "user_flows": [],
-        "must_include_copy": [],
-        "must_not_include": [],
-        "brand_assets": [],
-        "visual_style_signals": [],
-        "platforms": manifest["platforms"],
-        "acceptance_criteria": [],
-        "unknowns": [],
-    }
-    write_json(run_dir / "source" / "app_requirements_summary.json", summary)
-
+    write_json(run_dir / "source" / "app-requirements-summary.json", app_requirements_summary(manifest))
     if args.write_brief_stubs:
-        for page in manifest["page_inventory"]:
-            brief = brief_for_page(page, manifest["requested_output_language"])
-            write_json(run_dir / page["artifacts"]["brief_path"], brief)
-        manifest["phase_status"]["all_page_briefs_ready"] = True
-
+        write_brief_stubs(run_dir, manifest)
     save_manifest(run_dir, manifest)
-    print(json.dumps({"run_dir": str(run_dir), "manifest": str(run_dir / RUN_FILE), "page_count": len(pages)}, ensure_ascii=False))
+
+    output = {
+        "run_dir": str(run_dir),
+        "manifest": str(run_dir / RUN_FILE),
+        "page_count": len(pages),
+        "required_page_count": sum(1 for page in pages if page.get("required_for_delivery")),
+        "requested_output_language": manifest.get("requested_output_language"),
+        "react_allowed": False,
+        "html_allowed": False,
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
 
 

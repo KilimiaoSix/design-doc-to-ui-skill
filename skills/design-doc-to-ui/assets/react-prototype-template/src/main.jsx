@@ -89,7 +89,7 @@ function App() {
             <div className="phone-status">
               <span>9:41</span>
               <strong>{activePage.name}</strong>
-              <span>●●●</span>
+              <span>5G</span>
             </div>
             <Screen
               page={activePage}
@@ -104,7 +104,7 @@ function App() {
             <p className="eyebrow">{labels.visualParity || "Visual parity"}</p>
             <h2>{activePage.name}</h2>
             <p>
-              React 页面应按右侧批准图复刻布局、层级、配色、按钮和状态；截图不是主界面实现。
+              React 页面应按批准的 AI 原型图复刻布局、层级、配色、按钮和状态；右侧图片只作为复刻参考，不是主界面实现。
             </p>
             {activePage.referenceImage ? (
               <img src={activePage.referenceImage} alt={`${activePage.name} reference`} />
@@ -139,7 +139,7 @@ function Screen({ page, formState, setFormState, handleAction, showToast }) {
     <section className="screen">
       <header className="screen-header">
         <button type="button" aria-label="Back" onClick={() => window.history.back()}>
-          ‹
+          ←
         </button>
         <div>
           <p>{page.endpoint || "mobile"}</p>
@@ -249,7 +249,7 @@ function Control({ page, control, formState, setFormState, showToast }) {
     );
   }
 
-  if (control.type === "toggle") {
+  if (control.type === "toggle" || control.type === "checkbox") {
     return (
       <label className="toggle-row">
         <span>{control.label}</span>

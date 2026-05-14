@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>产品交互原型</title>
+    <title>静态交互原型</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -12,7 +12,7 @@
         <div>
           <p class="eyebrow" id="prototype-kicker">交互原型</p>
           <h1 id="prototype-title">产品交互原型</h1>
-          <p class="summary" id="prototype-summary">请用生成的页面数据替换 prototype-data.js。</p>
+          <p class="summary" id="prototype-summary">请使用生成的页面数据替换 prototype-data.js。</p>
         </div>
         <nav class="route-list" id="route-list" aria-label="页面"></nav>
       </aside>
@@ -71,19 +71,18 @@
       const dialogTitle = document.getElementById("dialog-title");
       const dialogBody = document.getElementById("dialog-body");
       const dialogClose = document.getElementById("dialog-close");
+      const controlState = {};
 
       document.documentElement.lang = data.lang || data.language || "zh-CN";
       document.title = data.title || "产品交互原型";
       document.getElementById("prototype-kicker").textContent = data.kicker || "交互原型";
       document.getElementById("prototype-title").textContent = data.title || "产品交互原型";
       document.getElementById("prototype-summary").textContent =
-        data.summary || "请用生成的页面数据替换 prototype-data.js。";
+        data.summary || "请使用生成的页面数据替换 prototype-data.js。";
       routeList.setAttribute("aria-label", labels.pages);
       dialogClose.textContent = labels.close;
 
       let activeId = getInitialPageId();
-      const controlState = {};
-
       window.addEventListener("hashchange", () => {
         activeId = getInitialPageId();
         render();
@@ -151,21 +150,10 @@
         `;
         pageView.appendChild(hero);
 
-        if (page.controls?.length) {
-          pageView.appendChild(renderControls(page));
-        }
-
-        if (page.sections?.length) {
-          page.sections.forEach((section) => pageView.appendChild(renderSection(section)));
-        }
-
-        if (page.states?.length) {
-          pageView.appendChild(renderStates(page.states));
-        }
-
-        if (page.referenceImage) {
-          pageView.appendChild(renderReference(page));
-        }
+        if (page.controls?.length) pageView.appendChild(renderControls(page));
+        if (page.sections?.length) page.sections.forEach((section) => pageView.appendChild(renderSection(section)));
+        if (page.states?.length) pageView.appendChild(renderStates(page.states));
+        if (page.referenceImage) pageView.appendChild(renderReference(page));
       }
 
       function renderTopActions(actions) {
@@ -207,7 +195,7 @@
               showToast(`${control.label}: ${select.value}`);
             });
             wrap.appendChild(select);
-          } else if (control.type === "toggle") {
+          } else if (control.type === "toggle" || control.type === "checkbox") {
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.checked = Boolean(current);
@@ -260,18 +248,16 @@
               </div>
             `;
             if (item.action) {
-              const actionButton = document.createElement("button");
-              actionButton.type = "button";
-              actionButton.className = "icon-button";
-              actionButton.textContent = item.action.label || ">";
-              actionButton.addEventListener("click", () => handleAction(item.action));
-              row.appendChild(actionButton);
+              const button = document.createElement("button");
+              button.type = "button";
+              button.textContent = item.action.label || labels.actions;
+              button.addEventListener("click", () => handleAction(item.action));
+              row.appendChild(button);
             }
             list.appendChild(row);
           });
           panel.appendChild(list);
         }
-
         return panel;
       }
 
@@ -279,78 +265,74 @@
         const panel = document.createElement("section");
         panel.className = "panel";
         panel.innerHTML = `<h3>${escapeHtml(labels.states)}</h3>`;
-        const list = document.createElement("div");
-        list.className = "state-list";
+        const grid = document.createElement("div");
+        grid.className = "state-grid";
         states.forEach((state) => {
           const button = document.createElement("button");
           button.type = "button";
-          button.className = "state-chip";
-          button.textContent = state.name || state.state;
-          button.addEventListener("click", () => openDialog(state.name || state.state, state.description || state.text || ""));
-          list.appendChild(button);
+          button.textContent = state.name || state.state || "state";
+          button.addEventListener("click", () => openDialog(button.textContent, state.description || ""));
+          grid.appendChild(button);
         });
-        panel.appendChild(list);
+        panel.appendChild(grid);
         return panel;
       }
 
       function renderReference(page) {
         const panel = document.createElement("section");
         panel.className = "panel reference-panel";
-        const heading = document.createElement("h3");
-        heading.textContent = labels.reference;
-        const image = document.createElement("img");
-        image.src = page.referenceImage;
-        image.alt = page.referenceAlt || `${page.name || page.id} ${labels.reference}`;
-        image.loading = "lazy";
-        panel.appendChild(heading);
-        panel.appendChild(image);
+        panel.innerHTML = `
+          <h3>${escapeHtml(labels.reference)}</h3>
+          <p>此图仅作为视觉复刻参考，不能作为整页 UI 实现。</p>
+          <img src="${escapeHtml(page.referenceImage)}" alt="${escapeHtml(page.name || page.id)}" />
+        `;
         return panel;
       }
 
-      function handleAction(action) {
+      function handleAction(action = {}) {
         if (action.target) {
           setRoute(action.target);
           return;
         }
         if (action.dialog) {
-          openDialog(action.label, action.dialog);
+          openDialog(action.label || labels.actions, action.dialog);
           return;
         }
         showToast(action.toast || labels.saved);
       }
 
       function openDialog(title, body) {
-        dialogTitle.textContent = title || "";
+        dialogTitle.textContent = title || labels.actions;
         dialogBody.textContent = body || "";
         dialog.showModal();
       }
 
       function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add("is-visible");
-        window.clearTimeout(showToast.timer);
-        showToast.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 1800);
+        toast.textContent = message || labels.saved;
+        toast.classList.add("show");
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
       }
 
       function formatStatus(status) {
         if (!status) return labels.status;
-        return labels[status] || status;
+        if (status === "approved") return labels.approved;
+        if (status === "blocked") return labels.blocked;
+        return status;
       }
 
       function labelText(text) {
         const span = document.createElement("span");
-        span.className = "control-label";
         span.textContent = text || "";
         return span;
       }
 
       function escapeHtml(value) {
-        return String(value || "")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#039;");
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
       }
 
       render();

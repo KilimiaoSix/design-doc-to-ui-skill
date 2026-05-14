@@ -1,199 +1,185 @@
 # Design Doc To UI Skill 中文文档
 
-这是一个可安装的 Codex Skill，用于把产品需求文档、设计文档、原型资料和品牌素材转换成完整、经过评审的 UI 设计交付包。
+这是一个可安装的 Codex Skill 包，用于把产品需求文档、设计文档、飞书文档、Markdown 规格、线框图、截图和品牌素材转换成完整、经过评审的 UI 设计交付物。
 
-仓库采用通用 Codex Skill 发布结构：
+仓库采用“1 个主 skill + 3 个 companion skill”的结构：
 
 ```text
 skills/
-  design-doc-to-ui/
-    SKILL.md
-    agents/
-    references/
-    assets/
-    scripts/
+  design-doc-to-ui/                 # 主编排 skill
+  design-doc-to-ui-feishu-doc/      # 飞书富文档交付
+  design-doc-to-ui-figma-replica/   # Figma 可编辑复刻交付
+  design-doc-to-ui-visual-audit/    # React/Figma 视觉复刻审计
 ```
 
 ## 能做什么
 
-`design-doc-to-ui` 可处理 PRD、设计文档、飞书/Lark 文档、Markdown 规格、线框图、截图和品牌素材，并生成：
+`design-doc-to-ui` 会生成：
 
-- 基于源文档的页面清单和需求摘要；
-- 脚本化的 `ui-run.json` manifest 和门禁校验；
-- 定制化视觉风格探索与 SubAgent 生图打样；
-- 每个 required 页面一张由 imagegen 生成并通过评审的 UI 设计图；
-- 每页独立的 SubAgent 评审记录；
-- 与请求语言一致的结构化设计文档，并嵌入各页面生成图；
-- 可本地运行的 React 小前端项目，用组件复刻已批准 AI 页面图并实现交互；
-- 用户明确要求时，上传到飞书/Lark 文档；
-- 用户明确要求时，生成或同步 Figma，并复刻 React 原型的样式和交互机制。
+- 基于源文档的 `page_inventory` 和需求摘要；
+- 脚本化 `ui-run.json` manifest 与门禁校验；
+- 由 SubAgent 生成的产品专属风格打样；
+- 每个 required 页面各 1 张由 imagegen 生成并评审的 UI 图；
+- 每页独立 SubAgent 的评审记录；
+- 与请求语言一致的结构化设计文档，包含设计思想、页面联动和所有页面生成图；
+- 可本地运行的 React 小前端项目，使用真实组件复刻已批准 AI 页面图并实现交互；
+- 用户明确要求时，交付飞书/Lark 富文档；
+- 用户明确要求时，交付 Figma 可编辑复刻原型。
 
-这个 skill 的策略比较严格：如果页面不完整、评审证据缺失、设计图未完成或文档未完成，会阻断交付，而不是静默缩小为一个 pilot 流程。
+这个 skill 的策略是宁可阻断，也不静默缩水。页面缺失、SubAgent 证据缺失、审计缺失、React/Figma 提前开始，都会被视为 blocker。
+
+## Companion Skills
+
+主 skill 只负责编排，不把专业交付降级成简化实现：
+
+- `design-doc-to-ui-visual-audit`：React 与 Figma 的视觉复刻审计。每个 required 页面都必须达到 `0.80`，平均分不能掩盖单页失败。
+- `design-doc-to-ui-feishu-doc`：飞书/Lark 富文档交付。要求设计叙事、页面联动、callout、grid、whiteboard/diagram、表格和 `qa/feishu-doc-audit.json`。
+- `design-doc-to-ui-figma-replica`：Figma 可编辑复刻交付。必须以已批准 AI 页面图和 React 截图为基准，不允许整屏贴图冒充可编辑原型。
+
+如果对应 companion skill 缺失、不可读或 frontmatter 不合法，对应阶段必须 blocked，不降级执行。
 
 ## 核心保证
 
 - 源文档中的每个 required 页面都必须有独立 page brief。
-- 每个 required 页面设计图都必须由页面级 SubAgent 生成并评审。
-- 同一时间最多 6 个活跃 SubAgent；页面较多时必须分批执行。
-- React 和 Figma 只能在全部必需设计图、主审计和结构化设计文档完成后开始。
-- `validate_design_run.py` 会在 page brief、worker 产物、最终图片、主审计和结构化设计文档未齐全时阻断 React/Figma。
-- `build_prototype_data.py --template react --copy-template` 会从已批准的 run 产物生成 Vite React 项目和 route 数据，避免 React 阶段漏掉 required 页面。
-- React 原型必须使用真实组件和交互，不能只是整页截图切换器。
-- 最终文档、React 元数据、可选飞书/Figma 输出必须跟随用户请求语言。
+- 每个 required 页面图都必须由页面级 SubAgent 生成和评审。
+- 同时最多 6 个活跃 SubAgent；页面多时必须分批。
+- React 和 Figma 只能在设计图、主审计和结构化设计文档完成后开始。
+- React 默认输出 Vite 小前端项目，不能只是整页图片浏览器。
+- React/Figma 复刻按逐页分数判断，单页低于 `0.80` 即失败。
+- 最终文档、React 元数据、飞书/Figma 输出都跟随用户请求语言。
 
 ## 安装
 
-在 Codex 中可以直接请求内置 skill installer：
+需要安装 4 个 skill。可以在 Codex 中分别请求：
 
 ```text
 $skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/tree/main/skills/design-doc-to-ui
+$skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/tree/main/skills/design-doc-to-ui-feishu-doc
+$skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/tree/main/skills/design-doc-to-ui-figma-replica
+$skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/tree/main/skills/design-doc-to-ui-visual-audit
 ```
 
 也可以直接运行安装脚本：
 
-```bash
-python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo KilimiaoSix/design-doc-to-ui-skill \
-  --path skills/design-doc-to-ui
-```
-
-Windows PowerShell 示例：
-
 ```powershell
-python "$env:USERPROFILE\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py" `
-  --repo KilimiaoSix/design-doc-to-ui-skill `
-  --path skills/design-doc-to-ui
+$skills = @(
+  "design-doc-to-ui",
+  "design-doc-to-ui-feishu-doc",
+  "design-doc-to-ui-figma-replica",
+  "design-doc-to-ui-visual-audit"
+)
+foreach ($skill in $skills) {
+  python "$env:USERPROFILE\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py" `
+    --repo KilimiaoSix/design-doc-to-ui-skill `
+    --path "skills/$skill"
+}
 ```
 
-安装后需要重启 Codex，让 Codex 重新加载 skill 元数据。
+安装后重启 Codex，让技能元数据重新加载。
 
 ## 更新已有安装
 
-官方安装脚本在目标目录已存在时会中止。若要更新，请先删除或备份旧版本：
-
-```bash
-rm -rf ~/.codex/skills/design-doc-to-ui
-python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo KilimiaoSix/design-doc-to-ui-skill \
-  --path skills/design-doc-to-ui
-```
-
-Windows PowerShell：
+官方安装脚本在目标目录已存在时会中止。更新前先删除或备份旧目录：
 
 ```powershell
-Remove-Item -Recurse -Force "$env:USERPROFILE\.codex\skills\design-doc-to-ui"
-python "$env:USERPROFILE\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py" `
-  --repo KilimiaoSix/design-doc-to-ui-skill `
-  --path skills/design-doc-to-ui
+$skills = @(
+  "design-doc-to-ui",
+  "design-doc-to-ui-feishu-doc",
+  "design-doc-to-ui-figma-replica",
+  "design-doc-to-ui-visual-audit"
+)
+foreach ($skill in $skills) {
+  Remove-Item -Recurse -Force "$env:USERPROFILE\.codex\skills\$skill"
+}
 ```
 
-更新后同样需要重启 Codex。
+然后重新执行安装命令并重启 Codex。
 
 ## 使用方式
 
-给 Codex 一个源文档，并明确使用该 skill，例如：
-
-```text
-Use $design-doc-to-ui to convert this PRD into a reviewed mobile app UI package with a structured design document and runnable React prototype.
-```
-
-中文也可以：
+给 Codex 一个源文档，并明确使用主 skill：
 
 ```text
 请使用 $design-doc-to-ui，把这个产品需求文档转换成完整的移动端 APP UI 设计稿、结构化设计文档和可运行 React 原型。
 ```
 
-skill 会按以下顺序执行：
+主流程会按顺序执行：
 
-1. 读取源文档和素材；
-2. 生成需求摘要、完整页面清单，并初始化 `ui-run.json`；
-3. 探索 2-3 个定制视觉方向，并用 SubAgent 生图打样；
-4. 锁定全局视觉风格约定；
-5. 为每个 required 页面生成独立 page brief；
-6. 每个页面使用独立 SubAgent 生图和评审；
-7. 主线程用脚本登记每个 worker 结果；
-8. 主线程做整体功能与一致性审查；
-9. 生成结构化设计文档并嵌入页面图；
-10. 运行设计完成门禁；
-11. 基于已批准设计图和结构化文档生成 React 原型；
-12. 本地运行 React，做视觉复刻和交互审计；
-13. 用户要求时再上传飞书；
-14. 用户要求时再生成或同步 Figma。
+1. 读取源文档和素材。
+2. 生成完整 `page_inventory` 并初始化 `ui-run.json`。
+3. 使用 SubAgent 探索产品专属视觉方向。
+4. 每个 required 页面使用一个页面级 SubAgent 生图和评审。
+5. 主线程用脚本登记每个 worker 结果。
+6. 生成包含设计思想、页面联动和页面图的结构化设计文档。
+7. 运行 design-completion 门禁。
+8. 基于已批准设计图和设计文档生成 React 原型。
+9. 使用视觉审计 companion 检查并修复，直到每页达到 `0.80`。
+10. 用户要求时，使用飞书 companion 上传富文档。
+11. 用户要求时，使用 Figma companion 创建或更新可编辑复刻原型。
+12. 运行最终 delivery gate。
 
 ## 脚本化门禁
 
-Skill 内置确定性的 helper 脚本，位置在 `skills/design-doc-to-ui/scripts/`：
+主 skill 内置确定性的 helper 脚本：
 
 ```bash
 python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-dir out/minihire --requested-output-language zh-CN
 python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/minihire
 python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/minihire --page-id home
+python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/minihire --require-all
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
 python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
+python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
 ```
 
-这套脚本借鉴 HatchPet 的 manifest 模式：页面数量仍然由设计文档决定，不写死；但 `page_inventory` 会成为 worker 任务、已批准图片、结构化文档、React route 和 React/Figma 准入的唯一事实来源。
+页面数量不写死，由源文档解析出的 `page_inventory` 决定。后续 page brief、SubAgent worker、设计图、设计文档、React route、飞书/Figma 准入和最终门禁都以它为唯一事实来源。
 
-## 关键流程约束
+## 飞书富文档标准
 
-### 页面覆盖
+飞书交付不是把 Markdown 贴进文档。`design-doc-to-ui-feishu-doc` 要求：
 
-源文档页面清单是交付范围的来源。不能把完整需求静默缩小成“核心流程”“pilot”“trial”。
+- 开头使用 callout 总结设计主张；
+- 包含设计命题、用户心智、核心矛盾、任务联动、信息架构、状态策略、组件原则和风险；
+- 至少 3 个 whiteboard/diagram：页面地图、用户主流程、状态/异常流；
+- 至少 4 个结构化表格：页面矩阵、交互矩阵、组件矩阵、风险/开放问题矩阵；
+- 使用 grid 做对比或原则分栏，避免连续纯段落；
+- 输出 `qa/feishu-doc-audit.json`。
 
-如果需要延期某些页面，必须由用户明确批准，并在文档中标记为 `user-approved deferred`。
+## Figma 复刻标准
 
-### SubAgent 生图与评审
+Figma 交付必须基于已批准 AI 页面图、React 截图和结构化设计文档：
 
-风格打样、页面生图和校准都必须使用 SubAgent。
-
-- 每个风格方向一个 SubAgent。
-- 每个页面一个 SubAgent。
-- 同一时间最多 6 个活跃 SubAgent。
-- 主线程不能替代 SubAgent 调用 `image_gen` 生成最终 UI 图。
-
-### React/Figma 顺序
-
-React 和 Figma 不能在设计图完成前启动。
-
-必须先满足：
-
-- 全局风格约定已锁定；
-- 每个 required 页面有已批准设计图；
-- 每页有 SubAgent 产物和评审记录；
-- 主线程整体审查通过；
-- 结构化设计文档已生成。
-
-之后才能基于“已批准设计图 + 结构化设计文档”实现 React 或 Figma 原型。Figma 只有在用户明确要求时才生成，并且必须复刻 React 的样式和交互机制。
+- 每个 required 页面必须有对应 Figma frame；
+- frame 必须是可编辑结构，不能用整屏图片冒充；
+- 布局、层级、颜色、字体、组件形态和主要状态要尽量复刻；
+- 原型连线覆盖主流程、主按钮、弹窗和状态流；
+- 缺少插画/图标/局部资源时，使用 SubAgent + imagegen 生成局部素材；
+- 输出 `qa/figma-replica-audit.json`，每页 `visual_similarity_score` 必须大于等于 `0.80`。
 
 ## 校验
 
-可以使用官方 skill creator validator 校验 skill 结构：
+校验 4 个 skill 结构：
 
 ```bash
 python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui
+python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui-feishu-doc
+python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui-figma-replica
+python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui-visual-audit
 ```
 
-本次脚本化更新覆盖了这些回归检查：
+本次回归覆盖：
 
-- `prepare_ui_run.py` 能把 MiniHire fixture 解析为 7 个 required 页面。
-- `ui_job_status.py --batch-size 12` 会把下一批 worker 限制为最多 6 个。
-- `validate_design_run.py --phase design-completion` 会在设计图和文档不完整时返回 `react_allowed=false`。
-- 补齐 mock worker 产物、锁定风格约定、主审计和结构化设计文档后，设计完成门禁通过。
-- `build_prototype_data.py --template react --copy-template` 会生成包含全部 required route 的 React 项目。
-- 缺 page brief、缺 worker-result、缺 final image、缺结构化设计文档、缺 prototype route 都会输出明确 blocker code。
-
-期望输出：
-
-```text
-Skill is valid!
-```
+- MiniHire fixture 可解析为 7 个 required 页面；
+- `ui_job_status.py --batch-size 12` 会把下一批 worker 限制为最多 6 个；
+- 设计图、worker 结果、主审计和结构化文档不完整时，`validate_design_run.py --phase design-completion` 返回 `react_allowed=false`；
+- 补齐 mock worker 产物、锁定风格、主审计和结构化设计文档后，design-completion gate 通过；
+- `build_prototype_data.py --template react --copy-template` 生成包含全部 required route 的 React 项目；
+- 缺 companion、缺视觉审计、缺飞书审计、缺 Figma 审计、缺 route、缺 page brief、缺 worker-result、缺 final image、缺结构化文档都会输出明确 blocker code。
 
 ## 仓库说明
 
 - README 放在仓库根目录，方便 GitHub 用户阅读。
-- 不要把 README、CHANGELOG 等额外文档放入 `skills/design-doc-to-ui/` 内部；skill 目录应只保留 Codex 执行该能力所需的说明、引用资料和资产。
-- `assets/style-catalog/` 中包含较大的风格样张图片，这是该 skill 的风格参考和质量基线资产。
+- 不要把 README、CHANGELOG 等额外文档放进单个 skill 目录；skill 目录应只保留 Codex 执行该能力所需的说明、引用资料、脚本和资产。
+- 飞书/Figma 是可选交付，但一旦用户要求，就必须通过对应 companion skill 和审计 JSON。
 
-## 仓库地址
-
-https://github.com/KilimiaoSix/design-doc-to-ui-skill
+仓库地址：[https://github.com/KilimiaoSix/design-doc-to-ui-skill](https://github.com/KilimiaoSix/design-doc-to-ui-skill)

@@ -1,6 +1,12 @@
-# Figma Workflow
+# Figma Replica Workflow
 
 Use Figma only when the user provides a Figma file/link or explicitly asks to create/sync Figma output.
+
+## Required Companion Skill
+
+Before Figma work, load `design-doc-to-ui-figma-replica/SKILL.md`.
+
+If the companion skill is unavailable, mark Figma delivery blocked. Do not create a simplified Figma file from the main skill alone.
 
 ## Prerequisites
 
@@ -10,41 +16,52 @@ Do not start Figma work until:
 - every non-deferred required page has an approved final design image;
 - the main-agent audit has passed;
 - no style-sampling, page-generation, or regeneration SubAgent is still running;
-- the structured design document exists.
+- the structured design document exists;
+- the React prototype exists and has passed visual parity and interaction audit.
 
-Figma output must be based on the approved design images, structured design document, and the passed React prototype. Do not create or sync Figma frames from requirements alone while page images are still pending.
+Figma output must be based on the approved AI page images, structured design document, and the passed React prototype. Do not create or sync Figma frames from requirements alone while page images are still pending.
 
-When React has been generated, Figma must recreate the same style and interaction mechanism as the React prototype:
+## Replica Requirements
 
-- same page routes/screens and naming;
-- same visual hierarchy, spacing, colors, components, and states;
-- same primary navigation and prototype links;
-- same modal/toast/state flows where Figma supports them;
-- same notes for interactions that are easier to demonstrate in React than in Figma.
+For each required page:
 
-After Figma generation or sync, update the structured design document with the Figma link and any Figma-specific audit notes.
+- create one corresponding editable Figma frame;
+- recreate layout, information hierarchy, spacing, colors, type scale, component shapes, and major decorative resources from the AI page image and React screenshot;
+- keep the approved image and React screenshot as references only, not as full-screen implementation layers;
+- add prototype links for primary navigation, main buttons, modal/state flows, and recovery paths where Figma supports them;
+- use SubAgent + imagegen to generate missing local assets such as illustrations, icons, mascots, or decorative resources, then register them in `figma-assets/`.
 
-## When User Provides A Figma Link
+Every page must score at least `visual_similarity_score >= 0.80`. Average score cannot hide a failed page.
 
-1. Extract file key and node ID when present.
-2. Use Figma tools according to the available Figma skill instructions.
-3. Add frames for approved screens, page map, interaction notes, and structured design documentation summaries.
-4. Preserve existing content unless the user asks to overwrite.
-5. Add links/notes that map Figma frames back to React routes.
+## Tooling
 
-## When User Asks To Convert React To Figma
+- Use Figma tools according to the available Figma skill instructions.
+- Before every `use_figma` call, load the `figma-use` skill.
+- Use `figma-generate-design` when capturing the local React prototype is the best route to preserve layout.
+- Preserve existing Figma content unless the user asks to overwrite.
+- Add frame notes that map Figma frames back to React routes and approved page images.
 
-- Generate the local React prototype first, but only after the Design Completion Gate passes and the structured design document exists.
-- If capture tooling is available, capture the local page into Figma.
-- If capture tooling is unavailable, provide the React prototype and explain the Figma limitation.
+## Output Contract
 
-## When User Asks For A Figma Prototype
+Write `qa/figma-replica-audit.json` with:
 
-- Use approved design images, the structured design document, and the React prototype as the source of truth.
-- Create or update frames for each approved page.
-- Add prototype links according to the user flow and route/action definitions in the structured design document.
-- Match the React prototype's component style and interaction map rather than creating an unrelated Figma-only visual direction.
-- Do not create Figma prototype links for pages whose design image is missing or unapproved, unless the user explicitly approves a partial prototype.
+```json
+{
+  "passed": true,
+  "figma_url": "https://www.figma.com/design/...",
+  "frame_count": 7,
+  "prototype_link_count": 20,
+  "page_scores": [
+    {
+      "page_id": "home",
+      "visual_similarity_score": 0.86,
+      "notes": "Matches layout, color, cards, and primary actions."
+    }
+  ],
+  "missing_assets": [],
+  "repair_required": []
+}
+```
 
 ## When No Figma Context Exists
 
@@ -53,7 +70,5 @@ Do not create a Figma file by default. In the final response say:
 ```text
 Figma was not generated because no Figma link was provided and Figma output was not requested.
 ```
-
-## Figma Output Notes
 
 Figma is an optional design-delivery channel. The canonical outputs of this skill are the structured design document and local React prototype project.

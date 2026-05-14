@@ -2,7 +2,7 @@ window.PROTOTYPE_DATA = {
   lang: "zh-CN",
   title: "静态交互原型",
   kicker: "交互原型",
-  summary: "请用基于页面 brief、逐页评审结果和结构化设计文档生成的数据替换此示例。React 模板是默认交付方式，本静态模板仅保留为兼容选项。",
+  summary: "请使用基于页面 brief、逐页评审结果和结构化设计文档生成的数据替换此示例。React 模板是默认交付方式，本静态模板仅保留为兼容选项。",
   labels: {
     pages: "页面",
     status: "状态",

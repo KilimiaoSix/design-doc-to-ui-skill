@@ -91,7 +91,8 @@ Run this after creating the React prototype:
 - Verify form controls, selectors, tabs, dialogs, toasts, and declared page states work.
 - Verify visible UI copy, document title, HTML `lang`, navigation labels, metadata, and review labels use `requested_output_language`.
 - Verify rendered React screenshots visually recreate the approved AI page images.
+- Verify `qa/visual-parity-audit.json` exists and every required page has `visual_similarity_score >= 0.80`.
 - Verify screenshots are not the main UI implementation. Full-page images may appear only as visual references, thumbnails, or review attachments.
 - Record pass/fail results and required fixes.
 
-Do not mark the delivery complete until the Final Functional Audit and React Visual Parity Gate pass or every failed item is explicitly blocked with a reason.
+Do not mark the delivery complete until the Final Functional Audit, React Visual Parity Gate, and requested Feishu/Figma delivery gates pass or every failed item is explicitly blocked with a reason.

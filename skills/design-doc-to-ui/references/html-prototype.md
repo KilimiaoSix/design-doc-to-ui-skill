@@ -111,6 +111,8 @@ The comparison may be manual, model-assisted, or script-assisted, but the report
 
 Do not mark Final Functional Audit as passed until visual parity is passed or every failure is explicitly blocked with a reason.
 
+Write `prototype/qa/visual-parity-report.md` for human review and `qa/visual-parity-audit.json` for script gates. The JSON audit must include one entry per required page and every `visual_similarity_score` must be at least `0.80`.
+
 ## Verification
 
 Before final response:
@@ -123,4 +125,5 @@ Before final response:
 - Run `npm run build` when feasible.
 - Run the React app locally and inspect routes/interactions when browser tools are available.
 - Capture or inspect route screenshots and complete the React Visual Parity Gate.
+- Confirm `qa/visual-parity-audit.json` exists and every required page has `visual_similarity_score >= 0.80`.
 - Report the local folder path, run command, visual parity result, and Final Functional Audit result.

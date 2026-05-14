@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Doc To UI Figma Replica"
+  short_description: "Build Figma replicas with 80 percent page parity."
+  default_prompt: "Use $design-doc-to-ui-figma-replica to create or update Figma from a completed design-doc-to-ui run. Load figma-use before use_figma, use approved AI images and React screenshots as references, create editable frames, add prototype links, generate missing assets through SubAgents when needed, and write qa/figma-replica-audit.json with every page at least 0.80."

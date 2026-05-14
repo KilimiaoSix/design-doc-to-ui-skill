@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Doc To UI Feishu Doc"
+  short_description: "Create rich Feishu design docs with diagrams and audits."
+  default_prompt: "Use $design-doc-to-ui-feishu-doc to turn a completed design-doc-to-ui run into a rich Feishu/Lark design document. Read lark-doc and lark-whiteboard guidance first, use callouts, grids, tables, whiteboards, page images, design thinking, and page linkage, then write qa/feishu-doc-audit.json."

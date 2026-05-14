@@ -2,7 +2,7 @@ const prototypeData = {
   lang: "zh-CN",
   title: "React 交互原型",
   kicker: "React Prototype",
-  summary: "请用 build_prototype_data.py 生成的数据替换此文件，并按批准的 AI 原型图复刻每个页面。",
+  summary: "请使用 build_prototype_data.py 生成的数据替换此文件，并按批准的 AI 原型图复刻每个页面。",
   labels: {
     pages: "页面",
     status: "状态",

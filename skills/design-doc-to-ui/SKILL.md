@@ -1,13 +1,13 @@
 ---
 name: design-doc-to-ui
-description: "Convert PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into complete UI design packages with source-backed page inventory, imagegen-generated UI images for every required page, structured design docs in the request language, runnable React prototypes that visually recreate approved images, and optional Feishu/Figma delivery. Use when Codex needs complete page coverage, custom style sampling, per-page SubAgent image generation/review, main-agent audit, React visual parity implementation, optional Feishu upload, or optional Figma output. Requires direct SubAgent delegation for style-sample image generation, final UI image generation, and calibration; do not ask for normal SubAgent confirmation, cap active SubAgents at 6, and block if SubAgents or image generation are unavailable."
+description: "Convert PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into complete UI design packages with source-backed page inventory, imagegen UI images, structured design docs with design thinking, runnable React prototypes, optional Feishu rich documents, optional Figma replicas, and 80% visual parity gates. Use when Codex needs page coverage, SubAgent image generation/review, React visual parity, Feishu design docs, or Figma output. Requires direct SubAgent delegation and mandatory companion skills for Feishu, Figma, and visual audit stages."
 ---
 
 # Design Doc To UI
 
 Use this skill to turn a source product/design document into an approved UI design package. The required package contains:
 
-- a structured design document in the requested language, with imagegen-generated page images for every required page;
+- a structured design document in the requested language, with design thinking, page linkage, and imagegen-generated page images for every required page;
 - a runnable React frontend prototype project that visually recreates the approved AI page images and adds the declared interactions.
 
 Optional package outputs:
@@ -29,15 +29,16 @@ Optional package outputs:
 10. After each page worker returns, use `scripts/record_ui_worker_result.py` from the main thread to register its artifacts in `ui-run.json`.
 11. Run the Per-Page SubAgent Gate.
 12. Perform the main-agent audit across all pages.
-13. Generate a structured design document in `requested_output_language`.
+13. Generate a structured design document in `requested_output_language`; it must explain design thinking and page linkage, not only list screens.
 14. Run `scripts/validate_design_run.py --phase design-completion`; React/Figma remains blocked unless this passes with `react_allowed: true`.
-15. Generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`, then implement the React screens from the completed design images and structured design document.
-16. Run the React Visual Parity Gate: render the React app locally, screenshot every required route, compare each screenshot to its approved AI page image, and repair the React UI until visual parity and interactions pass.
-17. Optionally upload the design document and page images to Feishu/Lark only when requested.
-18. Optionally create/update Figma prototype content only when requested; Figma must recreate the same style and interaction mechanism as the React prototype.
-19. Perform the Final Functional Audit on the React prototype and any requested Feishu/Figma outputs.
+15. Run the Companion Skill Gate for visual audit, then generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`.
+16. Implement the React screens from the completed design images and structured design document.
+17. Run the React Visual Parity Gate with `design-doc-to-ui-visual-audit`: render every required route, compare screenshots to approved AI page images, and repair until every page is at least 80% similar.
+18. Optionally upload a rich Feishu/Lark design document only when requested; this stage must use `design-doc-to-ui-feishu-doc`.
+19. Optionally create/update Figma only when requested; this stage must use `design-doc-to-ui-figma-replica` and pass the 80% per-page replica gate.
+20. Run `scripts/validate_design_run.py --phase delivery` and perform the Final Functional Audit on React plus any requested Feishu/Figma outputs.
 
-Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, or Final Functional Audit.
+Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, Companion Skill Gate, Visual Parity Gate, Delivery Gate, or Final Functional Audit.
 
 Do not silently reduce scope with labels such as "pilot", "core flow", "trial", or "MVP slice". A page from `page_inventory` may be deferred only when the user explicitly approves the deferral; record it as `user-approved deferred`, not approved.
 
@@ -58,9 +59,36 @@ Use these scripts during the run:
 - `scripts/ui_job_status.py --run-dir <output-run-dir>`: show missing/ready/approved pages and the next page-worker batch, capped at 6.
 - `scripts/record_ui_worker_result.py --run-dir <output-run-dir> --page-id <page_id>`: register a returned SubAgent worker directory and final image.
 - `scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion`: block or allow React/Figma.
+- `scripts/validate_companion_skills.py --run-dir <output-run-dir>`: verify required companion skills are installed/readable before visual audit, Feishu, or Figma stages.
 - `scripts/build_prototype_data.py --run-dir <output-run-dir> --template react --copy-template`: generate a React prototype starter project and `prototype/src/prototype-data.js` from the approved run package.
+- `scripts/validate_design_run.py --run-dir <output-run-dir> --phase delivery`: verify visual parity and requested Feishu/Figma delivery audits.
 
 Do not let a SubAgent edit `ui-run.json` directly. SubAgents write only their assigned worker directory; the main agent records worker artifacts with `record_ui_worker_result.py`.
+
+## Companion Skill Gate
+
+The main skill orchestrates delivery, but detailed Feishu, Figma, and visual audit work must be handled by companion skills.
+
+Before a gated stage, load the required companion skill by reading its `SKILL.md`:
+
+- Visual audit for React/Figma: `design-doc-to-ui-visual-audit`.
+- Feishu/Lark rich design document: `design-doc-to-ui-feishu-doc`.
+- Figma replica output: `design-doc-to-ui-figma-replica`.
+
+Resolve companion skills in this order:
+
+1. sibling skill in the same repository root, for example `../design-doc-to-ui-feishu-doc/SKILL.md`;
+2. installed skill under `$CODEX_HOME/skills/<skill-name>/SKILL.md`.
+
+If the required companion skill is missing, unreadable, or has invalid frontmatter, block that stage. Do not downgrade to a simplified main-thread implementation.
+
+Use:
+
+```bash
+python scripts/validate_companion_skills.py --run-dir <output-run-dir>
+```
+
+For release or installation validation, use `--require-all`.
 
 ## Source Ingestion
 
@@ -187,6 +215,8 @@ Read `references/design-doc-output.md`.
 
 Generate the structured design document before React/Figma implementation. Include the product summary, page inventory, user flow, visual style contract, screen specs for every required page, UI images, interaction notes, per-page review results, main-agent audit, prototype implementation requirements, and open questions. Mark React/Figma/Feishu paths as `pending` at this stage, then update the document after those outputs are created.
 
+The document must include a design narrative: design proposition, user mindset, core tension, information architecture, page linkage, state strategy, component principles, and risks. A page-by-page catalog alone is non-compliant.
+
 ## React Prototype
 
 Read `references/html-prototype.md`.
@@ -217,6 +247,8 @@ prototype/
 
 Build a component-level interactive React prototype by default. The React UI must visually recreate the approved AI-generated page images: layout, hierarchy, component shapes, spacing, color, typography, navigation, states, and main visual motifs should match the page image closely enough for product/design review. Use generated images only as visual references, thumbnails, review attachments, or cropped/local decorative assets when needed; do not use full-screen images as the primary UI implementation. If only an image browser can be produced, mark the prototype `blocked/non-compliant` and do not present it as complete.
 
+After React is rendered, use `design-doc-to-ui-visual-audit` to write `qa/visual-parity-audit.json`. Every required page must have `visual_similarity_score >= 0.80`; average score cannot hide a failed page.
+
 ## Final Functional Audit
 
 After the React prototype is created, the main agent must install dependencies if needed, run it locally, inspect or open it when browser tools are available, and verify:
@@ -233,13 +265,15 @@ If the audit fails, fix the React prototype or mark the failing area blocked bef
 
 ## Feishu/Lark Delivery
 
-Read `references/feishu-delivery.md` only if the user asks to upload, publish, or sync the final design package to Feishu/Lark. Do not upload to Feishu by default.
+Read `references/feishu-delivery.md` and `design-doc-to-ui-feishu-doc/SKILL.md` only if the user asks to upload, publish, or sync the final design package to Feishu/Lark. Do not upload to Feishu by default.
+
+Feishu output must be a rich design document, not a plain Markdown dump. It must use suitable Feishu blocks such as callouts, grids, tables, and whiteboards/diagrams, and must produce `qa/feishu-doc-audit.json`.
 
 ## Figma
 
-Read `references/figma-workflow.md` only if the user provides a Figma link/file, asks to sync to Figma, or asks to create a Figma prototype. Do not assume Figma is required.
+Read `references/figma-workflow.md` and `design-doc-to-ui-figma-replica/SKILL.md` only if the user provides a Figma link/file, asks to sync to Figma, or asks to create a Figma prototype. Do not assume Figma is required.
 
-Do not begin Figma implementation until the Design Completion Gate has passed, the structured design document exists, and the React prototype has passed visual parity and interaction audit. Figma output must be based on the approved design images, structured design document, and React prototype. After Figma output is generated, update the structured design document with the Figma link and audit notes.
+Do not begin Figma implementation until the Design Completion Gate has passed, the structured design document exists, and the React prototype has passed visual parity and interaction audit. Figma output must be based on the approved design images, structured design document, and React prototype. Each required page must have a Figma frame with `visual_similarity_score >= 0.80` in `qa/figma-replica-audit.json`. After Figma output is generated, update the structured design document with the Figma link and audit notes.
 
 ## Output Checklist
 
@@ -251,10 +285,11 @@ Before finishing, report:
 - Custom style directions explored, style samples generated, selected style, and whether the user confirmed it.
 - Page coverage count: source required pages, page briefs, worker results, approved/blocked/deferred pages, React routes.
 - Script gate results: `ui-run.json`, latest validation report, and prototype-data report.
+- Companion Skill Gate result and companion-skill report.
 - Pages generated and each page's review status.
 - Design Completion Gate result.
 - Structured design document path.
-- React prototype folder path, run command, and Final Functional Audit result.
-- Feishu/Lark document link or "not uploaded because not requested".
-- Figma link or "not generated because not requested/provided".
+- React prototype folder path, run command, visual parity score summary, and Final Functional Audit result.
+- Feishu/Lark document link and rich document audit, or "not uploaded because not requested".
+- Figma link and 80% replica audit, or "not generated because not requested/provided".
 - Known residual risks, blocked pages, infeasible pages, or user-approved deferred pages.
