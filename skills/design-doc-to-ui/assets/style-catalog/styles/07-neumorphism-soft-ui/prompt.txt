@@ -1,0 +1,13 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board for a design research catalog
+Primary request: Create one polished landscape style board showing the same calm planning app expressed across exactly four side-by-side endpoint examples: Web, PC, Mobile, Tablet. Each endpoint must be clearly separated and labeled only with the endpoint name.
+Style name: neumorphism-soft-ui
+Scene/backdrop: clean presentation board with very light warm gray background, no poster copy.
+Subject: realistic application UI screens: Web weekly planner dashboard, PC project control surface, Mobile habit and task tracker, Tablet focus dashboard.
+Style/medium: high-fidelity UI mockup, neumorphism soft UI, tactile raised and sunken controls, soft inner and outer shadows, pastel surfaces, rounded containers, subtle embossed icons, sparse dashboard suited to large controls.
+Composition/framing: wide 16:9 board, four panels in a row, each panel contains a full app screen adapted to its device size; Web and PC are wider with left navigation and dashboard cards, Mobile is narrow with bottom navigation and large touch controls, Tablet has split view. Keep the UI samples as the main subject.
+Lighting/mood: quiet, soft, low-contrast but readable, gentle studio lighting.
+Color palette: off-white, warm gray, pale blue, coral, mint, soft yellow accents.
+Text (verbatim): endpoint labels only: "Web", "PC", "Mobile", "Tablet". Inside UI use very short readable labels such as "Plan", "Today", "Tasks", "Focus", "Team"; prefer placeholder lines over tiny paragraphs.
+Constraints: all four endpoints must appear; same soft neumorphic visual language across all four; looks like real product interfaces with navigation, controls, progress rings, toggles, cards, and lists; text minimal and legible; no obvious spelling errors; no gibberish; no watermark.
+Avoid: glassmorphism, harsh drop shadows, dense finance dashboards, poster layout, marketing hero, abstract moodboard, illegible microtext, broken layouts, extra endpoint panels, brand logos.

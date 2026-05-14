@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board, wide 16:9 landscape PNG
+Primary request: Create one polished style board for the style "education-playful". Show the same learning product adapted across four clearly separated side-by-side endpoint examples labeled exactly: "Web", "PC", "Mobile", "Tablet".
+Scene/backdrop: neutral off-white canvas with four device/view frames arranged left to right.
+Subject: Web is a browser learning dashboard, PC is a desktop lesson workspace, Mobile is a practice quiz screen, Tablet is an interactive workbook screen. Each must look like a real usable app interface with navigation, content areas, controls, progress, and cards.
+Style/medium: high-fidelity modern UI mockup, playful education style, approachable colors, friendly simple illustrations, rounded cards, badges, progress rings, quiz choices, clear next-step buttons.
+Composition/framing: four panels with visible endpoint differences and adaptive layouts; no duplicated screen pasted at different sizes. Keep all UI readable and inside frames.
+Lighting/mood: bright, optimistic, clean.
+Color palette: sky blue, mint green, warm yellow, coral, deep navy text, off-white surfaces.
+Text (verbatim only): "Web", "PC", "Mobile", "Tablet", "Learn", "Quiz", "Progress", "Start", "XP". Use placeholder lines or icons for any other text; do not invent words.
+Constraints: all four endpoints must appear; style must be recognizable without labels; consistent visual language across endpoints; product UI, not poster art; minimal readable text; no brand logos; no watermarks.
+Avoid: gibberish text, misspellings, tiny unreadable paragraphs, collapsed layouts, decorative-only hero art, overlapping UI, broken device frames, random characters, fake language.

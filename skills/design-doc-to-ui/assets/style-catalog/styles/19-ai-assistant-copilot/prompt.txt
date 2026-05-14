@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board, wide 16:9 landscape PNG
+Primary request: Create one polished style board for the style "ai-assistant-copilot". Show the same AI assistant product adapted across four clearly separated side-by-side endpoint examples labeled exactly: "Web", "PC", "Mobile", "Tablet".
+Scene/backdrop: calm neutral canvas with four device/view frames arranged left to right.
+Subject: Web is a browser AI workspace with chat, context cards, and artifact preview; PC is a desktop copilot panel beside a document/editor workspace; Mobile is a compact assistant chat with suggestion chips and voice/action controls; Tablet is a split assistant plus generated artifact preview with source cards. Each must look like a real productivity AI app interface.
+Style/medium: high-fidelity modern UI mockup, AI-native copilot style, conversational thread, prompt composer, suggestion chips, context cards, citation/source chips, artifact preview cards, subtle glow accents used sparingly.
+Composition/framing: four panels with visible endpoint differences and adaptive layouts; no duplicated screen pasted at different sizes. Keep all UI inside frames with realistic navigation, chat, controls, and previews.
+Lighting/mood: focused, calm, intelligent, trustworthy.
+Color palette: clean white and cool gray surfaces, deep charcoal text, electric blue primary actions, teal assistant accents, soft lavender highlights, small amber status accents.
+Text (verbatim only): "Web", "PC", "Mobile", "Tablet", "Copilot", "Ask", "Draft", "Sources", "Run", "1", "2". Use placeholder lines, icons, and simple cards for any other text; do not invent words.
+Constraints: all four endpoints must appear; AI assistant/copilot style must be recognizable without labels; same visual language across endpoints; real app interface, not poster art; minimal readable text; no brand logos; no watermarks.
+Avoid: gibberish text, misspellings, fake paragraphs, unreadable code blocks, magical abstract poster composition, overlapping UI, broken device frames, random characters, fake language, excessive neon.

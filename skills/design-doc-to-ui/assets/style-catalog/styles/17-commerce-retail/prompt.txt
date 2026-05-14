@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board, wide 16:9 landscape PNG
+Primary request: Create one polished style board for the style "commerce-retail". Show the same retail shopping product adapted across four clearly separated side-by-side endpoint examples labeled exactly: "Web", "PC", "Mobile", "Tablet".
+Scene/backdrop: clean light retail canvas with four device/view frames arranged left to right.
+Subject: Web is an e-commerce storefront with product grid and filters, PC is a desktop shopping/catalog workspace with side filters and cart preview, Mobile is a product detail plus sticky cart action, Tablet is a split catalog and checkout/cart layout. Each must look like a real conversion-focused retail app interface.
+Style/medium: high-fidelity modern UI mockup, product-first commerce design, clear product photography tiles, price chips, sale badges, filter controls, cart/checkout CTA, crisp hierarchy, restrained but energetic retail styling.
+Composition/framing: four panels with visible endpoint differences and adaptive density; no duplicated screen pasted at different sizes. Keep UI inside frames with realistic navigation and controls.
+Lighting/mood: bright store-like, efficient, polished.
+Color palette: white and warm gray surfaces, black text, energetic red sale accent, cobalt blue CTA, fresh green success accents, small yellow promo highlights.
+Text (verbatim only): "Web", "PC", "Mobile", "Tablet", "Shop", "Cart", "Sale", "Buy", "Filter", "$49". Use placeholder lines or simple icons for any other text; do not invent words.
+Constraints: all four endpoints must appear; product-first retail style must be recognizable without labels; same visual language across endpoints; real app interface, not poster art; minimal readable text; no brand logos; no watermarks.
+Avoid: gibberish text, misspellings, long fake product names, tiny unreadable paragraphs, collapsed layouts, ad poster composition, overlapping UI, broken device frames, random characters, fake language.

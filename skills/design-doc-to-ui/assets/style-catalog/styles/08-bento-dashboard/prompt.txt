@@ -1,0 +1,13 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board for a design research catalog
+Primary request: Create one polished landscape style board showing the same operations analytics app expressed across exactly four side-by-side endpoint examples: Web, PC, Mobile, Tablet. Each endpoint must be clearly separated and labeled only with the endpoint name.
+Style name: bento-dashboard
+Scene/backdrop: clean neutral presentation board, no poster copy.
+Subject: realistic application UI screens: Web executive dashboard, PC command center, Mobile metrics summary app, Tablet team operations dashboard.
+Style/medium: high-fidelity UI mockup, modern bento dashboard style, modular asymmetric card grid, mixed card sizes, strong scanning hierarchy, charts, metric tiles, alert cards, compact lists, map/widget blocks, clean rounded rectangles.
+Composition/framing: wide 16:9 board, four panels in a row, each panel contains a full app screen adapted to its device size; Web and PC are wider with dense bento grids and sidebar nav, Mobile stacks bento cards vertically with bottom navigation, Tablet uses two-column bento layout. Keep the UI samples as the main subject.
+Lighting/mood: crisp, focused, product-grade, calm operational interface.
+Color palette: off-white and ink, slate text, fresh green, blue, amber, coral accents; avoid one-note palette.
+Text (verbatim): endpoint labels only: "Web", "PC", "Mobile", "Tablet". Inside UI use very short readable labels such as "Ops", "Revenue", "Tasks", "Health", "Alerts", "Team"; prefer placeholder lines over tiny paragraphs.
+Constraints: all four endpoints must appear; same bento grid visual language across all four; looks like real product interfaces with navigation, controls, cards, charts, filters, and lists; text minimal and legible; no obvious spelling errors; no gibberish; no watermark.
+Avoid: poster layout, marketing hero, abstract moodboard, overdecorated collage, huge hero typography, illegible microtext, broken layouts, extra endpoint panels, brand logos.

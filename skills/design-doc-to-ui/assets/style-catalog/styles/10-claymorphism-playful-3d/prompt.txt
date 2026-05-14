@@ -1,0 +1,14 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board for a design research catalog
+Primary request: Create one polished landscape style board showing the same playful habit-learning app expressed across exactly four side-by-side endpoint examples: Web, PC, Mobile, Tablet. Each endpoint must be clearly separated and labeled only with the endpoint name.
+Style name: claymorphism-playful-3d
+Scene/backdrop: clean warm presentation board, no poster copy.
+Subject: realistic application UI screens: Web family goals dashboard, PC playful learning workspace, Mobile daily habit app, Tablet activity planner.
+Style/medium: high-fidelity UI mockup in claymorphism playful 3D style, soft toy-like rounded forms, puffy 3D cards and buttons, friendly small mascot elements, colorful surfaces, gentle shadows, soft depth, tactile cheerful components.
+Composition/framing: wide 16:9 board, four panels in a row, each panel contains a full app screen adapted to its device size; Web and PC are wider with navigation, activity cards and progress widgets, Mobile is narrow with large touch targets and bottom navigation, Tablet has two-column activity planner. Keep the UI samples as the main subject, not a poster illustration.
+Lighting/mood: bright, friendly, approachable, polished product render.
+Color palette: sky blue, peach, lemon yellow, mint green, lavender, warm white, soft coral; balanced colorful palette.
+Materials/textures: matte clay-like 3D plastic, rounded inflated surfaces, soft shadows, subtle highlights, no realistic metal or glass.
+Text (verbatim): endpoint labels only: "Web", "PC", "Mobile", "Tablet". Inside UI use very short readable labels such as "Today", "Goals", "Stars", "Play", "Tasks", "Reward"; prefer placeholder lines over tiny paragraphs.
+Constraints: all four endpoints must appear; same playful claymorphism visual language across all four; looks like real product interfaces with navigation, controls, cards, progress rings, rewards, and lists; text minimal and legible; no obvious spelling errors; no gibberish; no watermark.
+Avoid: poster layout, marketing hero, abstract moodboard, pure mascot illustration without UI, harsh brutalist borders, glassmorphism, flat bento dashboard, illegible microtext, broken layouts, extra endpoint panels, brand logos.

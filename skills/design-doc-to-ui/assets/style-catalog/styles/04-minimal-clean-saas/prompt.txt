@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-device app style board, landscape PNG
+Primary request: Create one polished style board showing the same B2B SaaS analytics app UI in four side-by-side endpoints: Web, PC desktop, Mobile phone, and Tablet. The four UI samples must share one visual language and look like real usable product screens, not a poster.
+Style name: 04 minimal-clean-saas
+Scene/backdrop: clean white and very light gray background, subtle device shadows, no decorative blobs, no marketing hero art.
+Subject: four app UI mockups arranged left to right with small readable endpoint labels: "Web", "PC", "Mobile", "Tablet". Each mockup shows a SaaS dashboard with compact sidebar, filters, KPI cards, table rows, line chart, and action controls.
+Style/medium: minimal clean SaaS product design, restrained typography, tight spacing, 8px card radius, clear hierarchy, light borders, practical dense information, real operational dashboard.
+Composition/framing: wide 16:9 board, aligned baseline, each device frame fully visible; Web and PC wider, Mobile narrow, Tablet medium. Keep UI elements coherent and not overlapping.
+Lighting/mood: quiet, utilitarian, crisp, high-fidelity product UI presentation.
+Color palette: white, slate text, light gray borders, soft cyan, green status, small amber accent; avoid purple-dominant gradients and beige/brown themes.
+Text (verbatim): only these readable words should appear: "Web", "PC", "Mobile", "Tablet", "Overview", "Revenue", "Users", "Status".
+Constraints: all four endpoints must appear; same app and same visual language on every endpoint; realistic app UI; very little text; readable labels; no garbled text; no watermark; no logos; no giant poster headline; no people; no random paragraphs.

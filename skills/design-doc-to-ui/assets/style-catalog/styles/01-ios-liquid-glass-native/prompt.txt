@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-device app style board, landscape PNG
+Primary request: Create one polished style board showing the same productivity analytics app UI in four side-by-side endpoints: Web, PC desktop, Mobile phone, and Tablet. The four UI samples must share one visual language and look like real usable product screens, not a poster.
+Style name: 01 ios-liquid-glass-native
+Scene/backdrop: clean neutral studio background, subtle depth, no marketing hero art.
+Subject: four app UI mockups arranged left to right with small readable endpoint labels: "Web", "PC", "Mobile", "Tablet". Each mockup shows a dashboard with navigation, cards, charts, controls, and status areas.
+Style/medium: native Apple platform feel, iOS/macOS liquid glass style, translucent frosted glass surfaces, soft material blur, rounded native controls, layered sheets, thin hairline dividers, SF-like typography, refined icon buttons.
+Composition/framing: wide 16:9 board, aligned baseline, each device frame fully visible; Web and PC wider, Mobile narrow, Tablet medium. Keep all UI elements coherent and not overlapping.
+Lighting/mood: bright, calm, high-fidelity product UI presentation.
+Color palette: clear glass, white, light gray, soft blue, mint, small warm accent.
+Text (verbatim): only these readable words should appear: "Web", "PC", "Mobile", "Tablet", "Dashboard", "Tasks", "Today", "Revenue".
+Constraints: all four endpoints must appear; same app and same visual language on every endpoint; realistic app UI; very little text; readable labels; no garbled text; no watermark; no logos; no giant poster headline; no people; no random paragraphs.

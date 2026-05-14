@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="und">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>交互原型</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow" id="prototype-kicker">Prototype</p>
+          <h1 id="prototype-title">交互原型</h1>
+          <p class="summary" id="prototype-summary">请用生成的页面数据替换 prototype-data.js。</p>
+        </div>
+        <nav class="route-list" id="route-list" aria-label="Pages"></nav>
+      </aside>
+
+      <main class="workspace">
+        <section class="topbar" aria-live="polite">
+          <div>
+            <p class="eyebrow" id="page-status">Status</p>
+            <h2 id="page-title">Page</h2>
+          </div>
+          <div class="view-actions" id="view-actions"></div>
+        </section>
+
+        <section class="page-view" id="page-view"></section>
+      </main>
+    </div>
+
+    <dialog id="prototype-dialog">
+      <form method="dialog">
+        <h3 id="dialog-title"></h3>
+        <p id="dialog-body"></p>
+        <menu>
+          <button value="close" id="dialog-close">关闭</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./prototype-data.js"></script>
+    <script>
+      const fallbackLabels = {
+        pages: "页面",
+        status: "状态",
+        actions: "操作",
+        controls: "控件",
+        states: "状态",
+        reference: "视觉参考",
+        close: "关闭",
+        saved: "已保存",
+        noPages: "没有页面数据",
+        blocked: "阻断",
+        approved: "已通过",
+      };
+
+      const data = window.PROTOTYPE_DATA || {};
+      const labels = { ...fallbackLabels, ...(data.labels || {}) };
+      const pages = data.pages || [];
+      const routeList = document.getElementById("route-list");
+      const pageTitle = document.getElementById("page-title");
+      const pageStatus = document.getElementById("page-status");
+      const pageView = document.getElementById("page-view");
+      const viewActions = document.getElementById("view-actions");
+      const toast = document.getElementById("toast");
+      const dialog = document.getElementById("prototype-dialog");
+      const dialogTitle = document.getElementById("dialog-title");
+      const dialogBody = document.getElementById("dialog-body");
+      const dialogClose = document.getElementById("dialog-close");
+
+      document.documentElement.lang = data.lang || data.language || "zh-CN";
+      document.title = data.title || "交互原型";
+      document.getElementById("prototype-kicker").textContent = data.kicker || "Prototype";
+      document.getElementById("prototype-title").textContent = data.title || "交互原型";
+      document.getElementById("prototype-summary").textContent =
+        data.summary || "请用生成的页面数据替换 prototype-data.js。";
+      routeList.setAttribute("aria-label", labels.pages);
+      dialogClose.textContent = labels.close;
+
+      let activeId = getInitialPageId();
+      const controlState = {};
+
+      window.addEventListener("hashchange", () => {
+        activeId = getInitialPageId();
+        render();
+      });
+
+      function getInitialPageId() {
+        const fromHash = decodeURIComponent(location.hash.replace(/^#/, ""));
+        return pages.find((page) => page.id === fromHash)?.id || pages[0]?.id || "";
+      }
+
+      function setRoute(pageId) {
+        if (!pageId) return;
+        location.hash = encodeURIComponent(pageId);
+      }
+
+      function render() {
+        renderRoutes();
+        renderPage();
+      }
+
+      function renderRoutes() {
+        routeList.innerHTML = "";
+        if (!pages.length) {
+          const empty = document.createElement("p");
+          empty.className = "empty";
+          empty.textContent = labels.noPages;
+          routeList.appendChild(empty);
+          return;
+        }
+
+        pages.forEach((page) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "route-button";
+          button.textContent = page.navLabel || page.name || page.id;
+          button.setAttribute("aria-current", String(page.id === activeId));
+          button.addEventListener("click", () => setRoute(page.id));
+          routeList.appendChild(button);
+        });
+      }
+
+      function renderPage() {
+        const page = pages.find((item) => item.id === activeId);
+        viewActions.innerHTML = "";
+        pageView.innerHTML = "";
+
+        if (!page) {
+          pageTitle.textContent = labels.noPages;
+          pageStatus.textContent = "";
+          return;
+        }
+
+        pageTitle.textContent = page.name || page.id;
+        pageStatus.textContent = formatStatus(page.status);
+        renderTopActions(page.actions || []);
+
+        const hero = document.createElement("section");
+        hero.className = "hero-panel";
+        hero.innerHTML = `
+          <div>
+            <p class="eyebrow">${escapeHtml(page.kicker || page.endpoint || "")}</p>
+            <h3>${escapeHtml(page.headline || page.name || "")}</h3>
+            <p>${escapeHtml(page.purpose || "")}</p>
+          </div>
+        `;
+        pageView.appendChild(hero);
+
+        if (page.controls?.length) {
+          pageView.appendChild(renderControls(page));
+        }
+
+        if (page.sections?.length) {
+          page.sections.forEach((section) => pageView.appendChild(renderSection(section)));
+        }
+
+        if (page.states?.length) {
+          pageView.appendChild(renderStates(page.states));
+        }
+
+        if (page.referenceImage) {
+          pageView.appendChild(renderReference(page));
+        }
+      }
+
+      function renderTopActions(actions) {
+        actions.forEach((action) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = action.variant === "secondary" ? "button secondary" : "button";
+          button.textContent = action.label;
+          button.addEventListener("click", () => handleAction(action));
+          viewActions.appendChild(button);
+        });
+      }
+
+      function renderControls(page) {
+        const panel = document.createElement("section");
+        panel.className = "panel";
+        panel.innerHTML = `<h3>${escapeHtml(labels.controls)}</h3>`;
+        const grid = document.createElement("div");
+        grid.className = "control-grid";
+
+        page.controls.forEach((control) => {
+          const wrap = document.createElement("label");
+          wrap.className = "control";
+          const key = `${page.id}:${control.id || control.label}`;
+          const current = controlState[key] ?? control.value ?? "";
+          wrap.appendChild(labelText(control.label));
+
+          if (control.type === "select") {
+            const select = document.createElement("select");
+            (control.options || []).forEach((option) => {
+              const item = document.createElement("option");
+              item.value = option;
+              item.textContent = option;
+              item.selected = option === current;
+              select.appendChild(item);
+            });
+            select.addEventListener("change", () => {
+              controlState[key] = select.value;
+              showToast(`${control.label}: ${select.value}`);
+            });
+            wrap.appendChild(select);
+          } else if (control.type === "toggle") {
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = Boolean(current);
+            checkbox.addEventListener("change", () => {
+              controlState[key] = checkbox.checked;
+              showToast(labels.saved);
+            });
+            wrap.appendChild(checkbox);
+          } else {
+            const input = document.createElement("input");
+            input.type = control.type || "text";
+            input.placeholder = control.placeholder || "";
+            input.value = current;
+            input.addEventListener("input", () => {
+              controlState[key] = input.value;
+            });
+            input.addEventListener("change", () => showToast(labels.saved));
+            wrap.appendChild(input);
+          }
+          grid.appendChild(wrap);
+        });
+
+        panel.appendChild(grid);
+        return panel;
+      }
+
+      function renderSection(section) {
+        const panel = document.createElement("section");
+        panel.className = "panel";
+        const title = document.createElement("h3");
+        title.textContent = section.title || "";
+        panel.appendChild(title);
+
+        if (section.body) {
+          const body = document.createElement("p");
+          body.textContent = section.body;
+          panel.appendChild(body);
+        }
+
+        if (section.items?.length) {
+          const list = document.createElement("div");
+          list.className = "item-list";
+          section.items.forEach((item) => {
+            const row = document.createElement("article");
+            row.className = "item-row";
+            row.innerHTML = `
+              <div>
+                <strong>${escapeHtml(item.title || item)}</strong>
+                <p>${escapeHtml(item.description || "")}</p>
+              </div>
+            `;
+            if (item.action) {
+              const actionButton = document.createElement("button");
+              actionButton.type = "button";
+              actionButton.className = "icon-button";
+              actionButton.textContent = item.action.label || ">";
+              actionButton.addEventListener("click", () => handleAction(item.action));
+              row.appendChild(actionButton);
+            }
+            list.appendChild(row);
+          });
+          panel.appendChild(list);
+        }
+
+        return panel;
+      }
+
+      function renderStates(states) {
+        const panel = document.createElement("section");
+        panel.className = "panel";
+        panel.innerHTML = `<h3>${escapeHtml(labels.states)}</h3>`;
+        const list = document.createElement("div");
+        list.className = "state-list";
+        states.forEach((state) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "state-chip";
+          button.textContent = state.name || state.state;
+          button.addEventListener("click", () => openDialog(state.name || state.state, state.description || state.text || ""));
+          list.appendChild(button);
+        });
+        panel.appendChild(list);
+        return panel;
+      }
+
+      function renderReference(page) {
+        const panel = document.createElement("section");
+        panel.className = "panel reference-panel";
+        const heading = document.createElement("h3");
+        heading.textContent = labels.reference;
+        const image = document.createElement("img");
+        image.src = page.referenceImage;
+        image.alt = page.referenceAlt || `${page.name || page.id} ${labels.reference}`;
+        image.loading = "lazy";
+        panel.appendChild(heading);
+        panel.appendChild(image);
+        return panel;
+      }
+
+      function handleAction(action) {
+        if (action.target) {
+          setRoute(action.target);
+          return;
+        }
+        if (action.dialog) {
+          openDialog(action.label, action.dialog);
+          return;
+        }
+        showToast(action.toast || labels.saved);
+      }
+
+      function openDialog(title, body) {
+        dialogTitle.textContent = title || "";
+        dialogBody.textContent = body || "";
+        dialog.showModal();
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("is-visible");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 1800);
+      }
+
+      function formatStatus(status) {
+        if (!status) return labels.status;
+        return labels[status] || status;
+      }
+
+      function labelText(text) {
+        const span = document.createElement("span");
+        span.className = "control-label";
+        span.textContent = text || "";
+        return span;
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      render();
+    </script>
+  </body>
+</html>

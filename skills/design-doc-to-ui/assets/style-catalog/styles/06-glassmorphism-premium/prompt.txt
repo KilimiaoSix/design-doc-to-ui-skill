@@ -1,0 +1,13 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board for a design research catalog
+Primary request: Create one polished landscape style board showing the same premium finance/productivity app expressed across exactly four side-by-side endpoint examples: Web, PC, Mobile, Tablet. Each endpoint must be clearly separated and labeled only with the endpoint name.
+Style name: glassmorphism-premium
+Scene/backdrop: clean studio presentation board, subtle dark-to-indigo background, no poster copy.
+Subject: realistic application UI screens: Web portfolio overview in browser, PC desktop analytics workspace, Mobile account summary app, Tablet planning dashboard.
+Style/medium: high-fidelity UI mockup, premium glassmorphism, frosted translucent panels, layered depth, subtle blur, thin luminous borders, restrained gradients, soft reflections, refined sans typography, finance-lite portal feel.
+Composition/framing: wide 16:9 board, four panels in a row, each panel contains a full app screen adapted to its device size; Web and PC are wider and denser, Mobile is narrow with bottom navigation, Tablet has split view. Keep the UI samples as the main subject, not decorative devices.
+Lighting/mood: elegant, calm, premium, soft ambient glow.
+Color palette: deep charcoal, midnight blue, translucent white glass, cyan and warm gold accents.
+Text (verbatim): endpoint labels only: "Web", "PC", "Mobile", "Tablet". Inside UI use very short readable labels such as "Overview", "Balance", "Cards", "Chart", "Send"; prefer simple placeholder lines over tiny paragraphs.
+Constraints: all four endpoints must appear; same visual language across all four; looks like real product interfaces with navigation, controls, charts, cards, and lists; text minimal and legible; no obvious spelling errors; no gibberish; no watermark.
+Avoid: poster layout, marketing hero, abstract moodboard, giant slogans, illegible microtext, clutter, broken layouts, extra endpoint panels, brand logos.

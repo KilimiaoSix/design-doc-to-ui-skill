@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board, wide 16:9 landscape PNG
+Primary request: Create one polished style board for the style "gamified-growth". Show the same growth/operations product adapted across four clearly separated side-by-side endpoint examples labeled exactly: "Web", "PC", "Mobile", "Tablet".
+Scene/backdrop: energetic but clean canvas with four device/view frames arranged left to right.
+Subject: Web is a growth dashboard with progress bars, missions, and campaign panels; PC is a desktop mission-control workspace with leaderboard, task queue, and reward metrics; Mobile is a daily quests/streak screen with rewards and a mascot icon; Tablet is an expanded event map/rewards board with missions and progress. Each must look like a real gamified product interface, not a game poster.
+Style/medium: high-fidelity modern UI mockup, gamified growth style, progress loops, XP bars, badges, streak meter, mission cards, reward chest/cards, small mascot/avatar mark, event campaign panels, clear action buttons.
+Composition/framing: four panels with visible endpoint differences and adaptive density; no duplicated screen pasted at different sizes. Keep all UI readable and inside frames with realistic navigation and controls.
+Lighting/mood: high-energy, optimistic, competitive, polished.
+Color palette: deep navy and clean white surfaces, electric blue, lime green, orange, magenta, small gold reward accents. Use dark areas sparingly so contrast stays readable.
+Text (verbatim only): "Web", "PC", "Mobile", "Tablet", "Goals", "Quest", "Reward", "Streak", "XP", "Start". Use placeholder lines, icons, bars, counters, and badges for any other text; do not invent words.
+Constraints: all four endpoints must appear; gamified growth style must be recognizable without labels; same visual language across endpoints; real app interface, not poster art; minimal readable text; no brand logos; no watermarks.
+Avoid: gibberish text, misspellings, fake fantasy words, unreadable microtext, cluttered game art, poster composition, overlapping UI, broken device frames, random characters, fake language, excessive neon glare.

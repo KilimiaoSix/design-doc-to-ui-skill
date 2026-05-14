@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board, wide 16:9 landscape PNG
+Primary request: Create one polished style board for the style "social-content-feed". Show the same creator/content product adapted across four clearly separated side-by-side endpoint examples labeled exactly: "Web", "PC", "Mobile", "Tablet".
+Scene/backdrop: clean neutral canvas with four device/view frames arranged left to right.
+Subject: Web is a browser discovery feed with left navigation and content cards, PC is a desktop creator/feed management view with media grid and comments, Mobile is a native vertical social feed with bottom navigation and reactions, Tablet is a split feed and comment/detail layout. Each must look like a real content/social app interface.
+Style/medium: high-fidelity modern UI mockup, feed-first social/content style, media thumbnails, creator avatar rows, reaction buttons, comment chips, follow buttons, bottom nav on mobile, balanced content density.
+Composition/framing: four panels with visible endpoint differences and adaptive layouts; no duplicated screen pasted at different sizes. Keep UI inside frames, with realistic navigation, cards, media, and controls.
+Lighting/mood: lively, contemporary, content-rich but organized.
+Color palette: white and soft gray surfaces, black text, vivid coral reaction accent, electric blue action accent, violet highlights, fresh green status dots.
+Text (verbatim only): "Web", "PC", "Mobile", "Tablet", "Feed", "Follow", "Like", "Share", "Live". Use placeholder lines, icons, thumbnails, and counters for any other text; do not invent words.
+Constraints: all four endpoints must appear; social/content-feed style must be recognizable without labels; same visual language across endpoints; real app interface, not poster art; minimal readable text; no brand logos; no watermarks.
+Avoid: gibberish text, misspellings, fake usernames with random characters, long unreadable paragraphs, collapsed layouts, poster composition, overlapping UI, broken device frames, random characters, fake language.

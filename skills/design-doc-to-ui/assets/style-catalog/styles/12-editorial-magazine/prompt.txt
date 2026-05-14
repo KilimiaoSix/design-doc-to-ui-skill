@@ -1,0 +1,13 @@
+Use case: ui-mockup
+Asset type: app style research board
+Primary request: Create one polished landscape "four-endpoint style board" showing the same editorial-magazine app visual language across four app UI samples displayed side by side: WEB, PC, MOBILE, TABLET.
+Scene/backdrop: clean gallery-like neutral background with four equal vertical panels, each panel contains one realistic device/UI frame, no ad poster or slogan.
+Subject: a premium culture, travel, and product story app with article discovery, feature stories, saved reads, and curated collections, adapted to web browser, desktop app, phone app, and tablet app.
+Style/medium: high-end editorial magazine UI mockup, image-led layouts, strong typographic hierarchy, refined grids, real product interface.
+Composition/framing: four side-by-side panels in this order: WEB, PC, MOBILE, TABLET. Keep all screens fully visible, straight-on, aligned, and readable. Use small endpoint labels only.
+Lighting/mood: bright editorial studio lighting, calm and sophisticated.
+Color palette: ivory paper, charcoal ink, muted red accent, warm gray, restrained photo color.
+Materials/textures: subtle paper texture, thin rules, full-bleed photography, elegant serif headlines, clean modular navigation.
+Text (verbatim): use only these readable words where needed: "WEB", "PC", "MOBILE", "TABLET", "Journal", "Stories", "Issue", "Saved", "Read".
+Constraints: all four endpoints must appear; each endpoint must look like a real usable app screen with navigation and content modules; consistent UI language across devices; text must be minimal and legible; no illegible pseudo-text; no watermark; no brand logos.
+Avoid: poster composition, pure magazine cover, marketing hero page, decorative collage, chaotic layout, obvious typos, gibberish, broken or overlapping UI.

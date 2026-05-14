@@ -1,0 +1,12 @@
+Use case: ui-mockup
+Asset type: four-device app style board, landscape PNG
+Primary request: Create one polished style board showing the same enterprise productivity app UI in four side-by-side endpoints: Web, PC desktop, Mobile phone, and Tablet. The four UI samples must share one visual language and look like real usable product screens, not a poster.
+Style name: 03 fluent-productivity
+Scene/backdrop: clean light gray workspace background with subtle device shadows, no marketing hero art.
+Subject: four app UI mockups arranged left to right with small readable endpoint labels: "Web", "PC", "Mobile", "Tablet". Each mockup shows a work hub with sidebar, command bar, inbox/task list, calendar card, chart card, and document preview.
+Style/medium: Microsoft Fluent productivity design, Windows 11 app feel, acrylic/mica surfaces, subtle depth, Segoe-like typography, compact command bars, navigation rail, crisp icon buttons, restrained blue accents, collaborative office tool mood.
+Composition/framing: wide 16:9 board, aligned baseline, each device frame fully visible; Web and PC wider, Mobile narrow, Tablet medium. Keep UI elements coherent and not overlapping.
+Lighting/mood: focused, professional, high-fidelity product UI presentation.
+Color palette: cool white, mica gray, Microsoft-style blue, small teal and purple status accents.
+Text (verbatim): only these readable words should appear: "Web", "PC", "Mobile", "Tablet", "Work", "Inbox", "Calendar", "Files".
+Constraints: all four endpoints must appear; same app and same visual language on every endpoint; realistic app UI; very little text; readable labels; no garbled text; no watermark; no logos; no giant poster headline; no people; no random paragraphs.

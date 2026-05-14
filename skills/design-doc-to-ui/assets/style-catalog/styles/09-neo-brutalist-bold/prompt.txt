@@ -1,0 +1,13 @@
+Use case: ui-mockup
+Asset type: four-endpoint APP UI style board for a design research catalog
+Primary request: Create one polished landscape style board showing the same creative project management app expressed across exactly four side-by-side endpoint examples: Web, PC, Mobile, Tablet. Each endpoint must be clearly separated and labeled only with the endpoint name.
+Style name: neo-brutalist-bold
+Scene/backdrop: clean presentation board with a flat light background, no poster copy.
+Subject: realistic application UI screens: Web kanban workspace, PC team command board, Mobile task app, Tablet campaign planner.
+Style/medium: high-fidelity UI mockup in neo-brutalist bold style, raw high-contrast layout, thick black borders, hard shadows, flat saturated blocks, oversized but controlled typography, obvious buttons, visible grid, intentionally direct and memorable product UI.
+Composition/framing: wide 16:9 board, four panels in a row, each panel contains a full app screen adapted to its device size; Web and PC are wider with sidebar nav and kanban/table areas, Mobile is narrow with stacked task cards and bottom navigation, Tablet has split project board. Keep UI samples as the main subject.
+Lighting/mood: crisp, energetic, assertive, product-grade.
+Color palette: white, black, electric blue, hot pink, acid yellow, lime green, red accents; flat colors, no gradients.
+Text (verbatim): endpoint labels only: "Web", "PC", "Mobile", "Tablet". Inside UI use very short readable labels such as "Board", "Tasks", "Now", "Done", "Ship", "Team"; prefer placeholder lines over tiny paragraphs.
+Constraints: all four endpoints must appear; same neo-brutalist visual language across all four; looks like real product interfaces with navigation, controls, task cards, buttons, forms, and lists; text minimal and legible; no obvious spelling errors; no gibberish; no watermark.
+Avoid: poster layout, landing-page hero, abstract moodboard, decorative slogans, glassmorphism, soft neumorphism, 3D clay, illegible microtext, broken layouts, extra endpoint panels, brand logos.

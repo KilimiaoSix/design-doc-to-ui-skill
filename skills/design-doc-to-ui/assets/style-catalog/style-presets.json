@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "description": "Approved cross-endpoint APP style presets for Web, PC, Mobile, and Tablet UI generation.",
+  "endpoints": ["web", "pc", "mobile", "tablet"],
+  "styles": [
+    {
+      "id": 1,
+      "slug": "ios-liquid-glass-native",
+      "name": "iOS Liquid Glass Native",
+      "best_for": ["native-first consumer apps", "wellness analytics", "personal productivity"],
+      "visual_keywords": ["translucent", "frosted glass", "native controls", "calm", "soft blue"],
+      "sample": "generated-samples/01-ios-liquid-glass-native-style-board.png",
+      "style_doc": "styles/01-ios-liquid-glass-native/style.md",
+      "prompt": "styles/01-ios-liquid-glass-native/prompt.txt",
+      "review": "styles/01-ios-liquid-glass-native/review.md",
+      "endpoint_guidance": {
+        "web": "Translucent browser dashboard with soft blur panels and native-like side navigation.",
+        "pc": "macOS-like app frame with glass cards, command controls, and spacious charts.",
+        "mobile": "Stacked native cards, bottom navigation, large tap targets, and restrained labels.",
+        "tablet": "Split panes, larger glass cards, side navigation, and touch-scale charts."
+      },
+      "avoid": ["heavy gradients", "dark chrome", "dense enterprise tables", "poster layout"]
+    },
+    {
+      "id": 2,
+      "slug": "material-3-expressive",
+      "name": "Material 3 Expressive",
+      "best_for": ["Android-first apps", "lifestyle tools", "habit apps"],
+      "visual_keywords": ["dynamic color", "rounded containers", "large controls", "expressive"],
+      "sample": "generated-samples/02-material-3-expressive-style-board.png",
+      "style_doc": "styles/02-material-3-expressive/style.md",
+      "prompt": "styles/02-material-3-expressive/prompt.txt",
+      "review": "styles/02-material-3-expressive/review.md",
+      "endpoint_guidance": {
+        "web": "Dynamic color sections, rounded containers, expressive tabs, and large controls.",
+        "pc": "Adaptive desktop shell with colorful panels and responsive grid.",
+        "mobile": "Large rounded cards, dynamic surfaces, clear top app bar, and FAB-like action.",
+        "tablet": "Adaptive two-column layout with dynamic panels and prominent primary action."
+      },
+      "avoid": ["tiny controls", "flat grayscale SaaS", "platform-inconsistent navigation"]
+    },
+    {
+      "id": 3,
+      "slug": "fluent-productivity",
+      "name": "Fluent Productivity",
+      "best_for": ["enterprise productivity", "work hubs", "collaboration"],
+      "visual_keywords": ["neutral surfaces", "command bar", "semantic blue", "inclusive", "focused"],
+      "sample": "generated-samples/03-fluent-productivity-style-board.png",
+      "style_doc": "styles/03-fluent-productivity/style.md",
+      "prompt": "styles/03-fluent-productivity/prompt.txt",
+      "review": "styles/03-fluent-productivity/review.md",
+      "endpoint_guidance": {
+        "web": "Light work hub with command bar, sidebar, task lists, and activity cards.",
+        "pc": "Windows-like command surface with left rail, detail pane, and timeline.",
+        "mobile": "Compact work list, activity cards, and calm blue productivity accents.",
+        "tablet": "Expanded productivity split view with navigation rail, list pane, and detail pane."
+      },
+      "avoid": ["playful mascots", "decorative gradients", "low-density marketing pages"]
+    },
+    {
+      "id": 4,
+      "slug": "minimal-clean-saas",
+      "name": "Minimal Clean SaaS",
+      "best_for": ["B2B SaaS", "analytics", "operations"],
+      "visual_keywords": ["white space", "thin borders", "KPI cards", "restrained", "tables"],
+      "sample": "generated-samples/04-minimal-clean-saas-style-board.png",
+      "style_doc": "styles/04-minimal-clean-saas/style.md",
+      "prompt": "styles/04-minimal-clean-saas/prompt.txt",
+      "review": "styles/04-minimal-clean-saas/review.md",
+      "endpoint_guidance": {
+        "web": "Clean KPI dashboard with white surfaces, thin borders, tables, and line charts.",
+        "pc": "Dense but quiet table and chart workspace with precise filters.",
+        "mobile": "Simplified KPI cards, concise lists, clean filters, and one dominant action.",
+        "tablet": "Wider analytics cards, filter rail, compact table region, and readable charts."
+      },
+      "avoid": ["ornamental illustration", "oversized hero layouts", "low information density"]
+    },
+    {
+      "id": 5,
+      "slug": "dark-pro-tool",
+      "name": "Dark Pro Tool",
+      "best_for": ["creator tools", "developer tools", "data workbenches"],
+      "visual_keywords": ["dark mode", "expert workspace", "tool rails", "inspector", "cyan accents"],
+      "sample": "generated-samples/05-dark-pro-tool-style-board.png",
+      "style_doc": "styles/05-dark-pro-tool/style.md",
+      "prompt": "styles/05-dark-pro-tool/prompt.txt",
+      "review": "styles/05-dark-pro-tool/review.md",
+      "endpoint_guidance": {
+        "web": "Dark browser workspace with toolbar, layers/sidebar, inspector cards, and canvas.",
+        "pc": "Dense panels, central workbench, inspector, tabs, and status bars.",
+        "mobile": "Compact dark panels, quick tools, mini inspector areas, and high-contrast states.",
+        "tablet": "Wide workbench with inspector/sidebar, canvas, timeline, and status cards."
+      },
+      "avoid": ["low-contrast gray text", "decorative neon", "marketing hero composition"]
+    },
+    {
+      "id": 6,
+      "slug": "glassmorphism-premium",
+      "name": "Glassmorphism Premium",
+      "best_for": ["premium portals", "finance-lite dashboards", "executive analytics"],
+      "visual_keywords": ["frosted glass", "layered", "glow", "premium", "dark translucent"],
+      "sample": "generated-samples/06-glassmorphism-premium-style-board.png",
+      "style_doc": "styles/06-glassmorphism-premium/style.md",
+      "prompt": "styles/06-glassmorphism-premium/prompt.txt",
+      "review": "styles/06-glassmorphism-premium/review.md",
+      "endpoint_guidance": {
+        "web": "Layered glass dashboard over a soft atmospheric backdrop with restrained glow.",
+        "pc": "Frosted analytics cards, dark translucent layers, and premium dashboard composition.",
+        "mobile": "Stacked translucent cards, dark premium background, readable overlays, and minimal glow.",
+        "tablet": "Translucent split layout with summary cards, detail pane, and premium depth."
+      },
+      "avoid": ["blur behind text without contrast", "overbright neon", "unreadable overlays"]
+    },
+    {
+      "id": 7,
+      "slug": "neumorphism-soft-ui",
+      "name": "Neumorphism Soft UI",
+      "best_for": ["wellness controls", "habit dashboards", "IoT remotes"],
+      "visual_keywords": ["soft shadows", "raised controls", "sunken surfaces", "pastel", "tactile"],
+      "sample": "generated-samples/07-neumorphism-soft-ui-style-board.png",
+      "style_doc": "styles/07-neumorphism-soft-ui/style.md",
+      "prompt": "styles/07-neumorphism-soft-ui/prompt.txt",
+      "review": "styles/07-neumorphism-soft-ui/review.md",
+      "endpoint_guidance": {
+        "web": "Pale dashboard with raised/sunken controls, sparse cards, and large tactile inputs.",
+        "pc": "Spacious tactile control dashboard with low-density cards and soft shadows.",
+        "mobile": "Large tactile controls, sparse content, soft shadows, and clear active states.",
+        "tablet": "Large control tiles, spacious cards, clear selected states, and contrast safeguards."
+      },
+      "avoid": ["low-contrast labels", "dense tables", "tiny icons", "ambiguous pressed states"]
+    },
+    {
+      "id": 8,
+      "slug": "bento-dashboard",
+      "name": "Bento Dashboard",
+      "best_for": ["metrics dashboards", "operations", "AI workspace summaries"],
+      "visual_keywords": ["modular", "asymmetric", "cards", "metrics", "scannable"],
+      "sample": "generated-samples/08-bento-dashboard-style-board.png",
+      "style_doc": "styles/08-bento-dashboard/style.md",
+      "prompt": "styles/08-bento-dashboard/prompt.txt",
+      "review": "styles/08-bento-dashboard/review.md",
+      "endpoint_guidance": {
+        "web": "Asymmetric card grid with KPIs, charts, maps, status blocks, and mixed modules.",
+        "pc": "Large mixed-module dashboard with overview metrics, maps, charts, and tasks.",
+        "mobile": "Stacked bento cards with prioritized metrics and no tiny multi-column details.",
+        "tablet": "Expanded bento grid with more modules while preserving clear hierarchy."
+      },
+      "avoid": ["same-size card monotony", "unlabeled charts", "overdense mobile layouts"]
+    },
+    {
+      "id": 9,
+      "slug": "neo-brutalist-bold",
+      "name": "Neo-Brutalist Bold",
+      "best_for": ["youth brands", "experimental tools", "campaign apps"],
+      "visual_keywords": ["thick borders", "high contrast", "flat colors", "raw", "bold type"],
+      "sample": "generated-samples/09-neo-brutalist-bold-style-board.png",
+      "style_doc": "styles/09-neo-brutalist-bold/style.md",
+      "prompt": "styles/09-neo-brutalist-bold/prompt.txt",
+      "review": "styles/09-neo-brutalist-bold/review.md",
+      "endpoint_guidance": {
+        "web": "Thick borders, saturated blocks, visible grid, oversized buttons, and direct labels.",
+        "pc": "Bold desktop command board with explicit tabs and thick bordered panels.",
+        "mobile": "Chunky cards, oversized buttons, thick outlines, and very clear hierarchy.",
+        "tablet": "Loud modular board with clear grid tracks and large interaction zones."
+      },
+      "avoid": ["illegible novelty type", "random color clashes", "poster-only layouts"]
+    },
+    {
+      "id": 10,
+      "slug": "claymorphism-playful-3d",
+      "name": "Claymorphism Playful 3D",
+      "best_for": ["kids apps", "habit apps", "reward onboarding"],
+      "visual_keywords": ["puffy", "3D", "matte clay", "friendly", "rewarding"],
+      "sample": "generated-samples/10-claymorphism-playful-3d-style-board.png",
+      "style_doc": "styles/10-claymorphism-playful-3d/style.md",
+      "prompt": "styles/10-claymorphism-playful-3d/prompt.txt",
+      "review": "styles/10-claymorphism-playful-3d/review.md",
+      "endpoint_guidance": {
+        "web": "Friendly dashboard with puffy cards, reward widgets, soft 3D accents, and progress.",
+        "pc": "3D learning workspace with lesson cards, rewards, and approachable controls.",
+        "mobile": "Large friendly cards, simple progress, reward objects, mascot accents, and bottom navigation.",
+        "tablet": "Activity planner with reward panel, progress cards, friendly objects, and wide touch zones."
+      },
+      "avoid": ["pure mascot illustration", "crowded toy scenes", "tiny copy", "flat enterprise tables"]
+    },
+    {
+      "id": 11,
+      "slug": "skeuomorphic-realistic",
+      "name": "Skeuomorphic Realistic",
+      "best_for": ["audio tools", "craft apps", "nostalgia products"],
+      "visual_keywords": ["real materials", "knobs", "sliders", "texture", "physical metaphor"],
+      "sample": "generated-samples/11-skeuomorphic-realistic-style-board.png",
+      "style_doc": "styles/11-skeuomorphic-realistic/style.md",
+      "prompt": "styles/11-skeuomorphic-realistic/prompt.txt",
+      "review": "styles/11-skeuomorphic-realistic/review.md",
+      "endpoint_guidance": {
+        "web": "Textured panel app with material metaphors, realistic controls, and clear spacing.",
+        "pc": "Hardware-like desktop console with realistic surfaces and visible physical controls.",
+        "mobile": "Realistic controls used sparingly with large tap targets and minimal clutter.",
+        "tablet": "Material-rich tablet console with carefully spaced panels and controls."
+      },
+      "avoid": ["overcrowded knobs", "fake tiny labels", "low-contrast texture", "decorative realism over usability"]
+    },
+    {
+      "id": 12,
+      "slug": "editorial-magazine",
+      "name": "Editorial Magazine",
+      "best_for": ["content apps", "travel", "lifestyle", "brand storytelling"],
+      "visual_keywords": ["large typography", "image-led", "curated", "story pacing", "premium content"],
+      "sample": "generated-samples/12-editorial-magazine-style-board.png",
+      "style_doc": "styles/12-editorial-magazine/style.md",
+      "prompt": "styles/12-editorial-magazine/prompt.txt",
+      "review": "styles/12-editorial-magazine/review.md",
+      "endpoint_guidance": {
+        "web": "Image-led story grid with headline hierarchy and curated sections.",
+        "pc": "Editorial reading workspace with hero image, story columns, and content rail.",
+        "mobile": "Image-led article cards, large headlines, vertical stream, and simple reading controls.",
+        "tablet": "Magazine split view with hero imagery, story rail, body preview, and curated sections."
+      },
+      "avoid": ["dashboard-only layout", "tiny article text", "generic stock-photo collage"]
+    },
+    {
+      "id": 13,
+      "slug": "luxury-premium",
+      "name": "Luxury Premium",
+      "best_for": ["premium services", "travel", "fashion", "membership"],
+      "visual_keywords": ["elegant", "restrained", "dark neutrals", "gold accents", "premium imagery"],
+      "sample": "generated-samples/13-luxury-premium-style-board.png",
+      "style_doc": "styles/13-luxury-premium/style.md",
+      "prompt": "styles/13-luxury-premium/prompt.txt",
+      "review": "styles/13-luxury-premium/review.md",
+      "endpoint_guidance": {
+        "web": "Elegant discovery portal with refined surfaces, premium photography, and sparse CTAs.",
+        "pc": "Refined booking or product workstation with dark elegant panels and minimal actions.",
+        "mobile": "Premium booking/discovery flow with dark or neutral surfaces and sparse CTAs.",
+        "tablet": "Immersive product/service cards, refined split layout, and elegant action area."
+      },
+      "avoid": ["cheap gold overload", "busy discount UI", "low-contrast dark text"]
+    },
+    {
+      "id": 14,
+      "slug": "fintech-trust",
+      "name": "Fintech Trust",
+      "best_for": ["banking", "investment", "insurance", "wallets"],
+      "visual_keywords": ["trustworthy", "navy", "green", "charts", "risk notices", "precise"],
+      "sample": "generated-samples/14-fintech-trust-style-board.png",
+      "style_doc": "styles/14-fintech-trust/style.md",
+      "prompt": "styles/14-fintech-trust/prompt.txt",
+      "review": "styles/14-fintech-trust/review.md",
+      "endpoint_guidance": {
+        "web": "Finance dashboard with account overview, charts, alerts, and transactions.",
+        "pc": "Portfolio workstation with watchlists, risk notices, transaction tables, and charts.",
+        "mobile": "Account summary, finance cards, transaction list, risk notices, and precise CTAs.",
+        "tablet": "Expanded portfolio charts, alerts, transaction detail, and account summary side by side."
+      },
+      "avoid": ["gamified finance pressure", "ambiguous risk status", "decorative charts without labels"]
+    },
+    {
+      "id": 15,
+      "slug": "health-calm",
+      "name": "Health Calm",
+      "best_for": ["healthcare", "wellness", "therapy", "habit health"],
+      "visual_keywords": ["calming", "soft blue", "soft green", "clinical clarity", "reassuring"],
+      "sample": "generated-samples/15-health-calm-style-board.png",
+      "style_doc": "styles/15-health-calm/style.md",
+      "prompt": "styles/15-health-calm/prompt.txt",
+      "review": "styles/15-health-calm/review.md",
+      "endpoint_guidance": {
+        "web": "Calm care dashboard with appointments, care status, and readable progress.",
+        "pc": "Care workspace with patient or wellness records, schedule, and summary cards.",
+        "mobile": "Daily care card, appointment reminder, simple progress check, and reassuring tone.",
+        "tablet": "Split care dashboard with schedule, metrics, notes, and calming hierarchy."
+      },
+      "avoid": ["alarmist red overload", "tiny medical text", "decorative wellness cliches"]
+    },
+    {
+      "id": 16,
+      "slug": "education-playful",
+      "name": "Education Playful",
+      "best_for": ["learning apps", "kids education", "tutoring", "skills"],
+      "visual_keywords": ["friendly", "progress", "badges", "illustrated", "clear next step"],
+      "sample": "generated-samples/16-education-playful-style-board.png",
+      "style_doc": "styles/16-education-playful/style.md",
+      "prompt": "styles/16-education-playful/prompt.txt",
+      "review": "styles/16-education-playful/review.md",
+      "endpoint_guidance": {
+        "web": "Course progress hub with modules, badges, and friendly illustrations.",
+        "pc": "Learning workspace with lesson list, activity board, rewards, and analytics.",
+        "mobile": "Lesson path, progress meter, badges, friendly illustration, and one next-step action.",
+        "tablet": "Classroom activity board with lesson detail, reward area, and progress overview."
+      },
+      "avoid": ["overly childish UI for adult learners", "low contrast colors", "crowded illustration"]
+    },
+    {
+      "id": 17,
+      "slug": "commerce-retail",
+      "name": "Commerce Retail",
+      "best_for": ["shopping", "marketplaces", "catalogs", "checkout"],
+      "visual_keywords": ["product-first", "filters", "cart", "offers", "conversion-focused"],
+      "sample": "generated-samples/17-commerce-retail-style-board.png",
+      "style_doc": "styles/17-commerce-retail/style.md",
+      "prompt": "styles/17-commerce-retail/prompt.txt",
+      "review": "styles/17-commerce-retail/review.md",
+      "endpoint_guidance": {
+        "web": "Product grid with filters, offer strip, cart summary, ratings, and product hierarchy.",
+        "pc": "Catalog management or shopping desktop with product grid, filters, detail pane, and cart.",
+        "mobile": "Product detail, gallery, price, variants, ratings, cart, and high-clarity checkout CTA.",
+        "tablet": "Browsing plus checkout split with filters, product grid, and cart/detail panel."
+      },
+      "avoid": ["unclear price hierarchy", "fake discount clutter", "missing cart/checkout affordance"]
+    },
+    {
+      "id": 18,
+      "slug": "social-content-feed",
+      "name": "Social Content Feed",
+      "best_for": ["communities", "creator platforms", "media feeds"],
+      "visual_keywords": ["feed-first", "media cards", "reactions", "creator cards", "bottom navigation"],
+      "sample": "generated-samples/18-social-content-feed-style-board.png",
+      "style_doc": "styles/18-social-content-feed/style.md",
+      "prompt": "styles/18-social-content-feed/prompt.txt",
+      "review": "styles/18-social-content-feed/review.md",
+      "endpoint_guidance": {
+        "web": "Feed stream, creator cards, side navigation, media previews, reactions, and balanced density.",
+        "pc": "Creator desktop feed with content grid, feed column, reactions, messages, and side navigation.",
+        "mobile": "Feed-first layout with media card, reactions, comments, creator profile, and bottom navigation.",
+        "tablet": "Media grid plus conversation/detail pane while keeping creator context visible."
+      },
+      "avoid": ["unmoderated clutter", "ambiguous privacy state", "illegible overlay text"]
+    },
+    {
+      "id": 19,
+      "slug": "ai-assistant-copilot",
+      "name": "AI Assistant Copilot",
+      "best_for": ["AI tools", "research copilots", "productivity assistants"],
+      "visual_keywords": ["conversation", "prompt composer", "artifact preview", "context cards", "sources"],
+      "sample": "generated-samples/19-ai-assistant-copilot-style-board.png",
+      "style_doc": "styles/19-ai-assistant-copilot/style.md",
+      "prompt": "styles/19-ai-assistant-copilot/prompt.txt",
+      "review": "styles/19-ai-assistant-copilot/review.md",
+      "endpoint_guidance": {
+        "web": "Chat pane, context cards, generated artifact preview, source area, and prompt composer.",
+        "pc": "Copilot workspace with prompt editor, context list, artifacts, citations, and output preview.",
+        "mobile": "Prompt composer, conversation cards, suggestions, source chips, and compact artifact preview.",
+        "tablet": "Context pane, chat pane, artifact preview, and citation/source panel in a touch grid."
+      },
+      "avoid": ["magical AI glow without controls", "hidden sources", "unlabeled generated state"]
+    },
+    {
+      "id": 20,
+      "slug": "gamified-growth",
+      "name": "Gamified Growth",
+      "best_for": ["growth loops", "missions", "events", "loyalty"],
+      "visual_keywords": ["missions", "XP", "rewards", "streaks", "leaderboard", "campaign"],
+      "sample": "generated-samples/20-gamified-growth-style-board.png",
+      "style_doc": "styles/20-gamified-growth/style.md",
+      "prompt": "styles/20-gamified-growth/prompt.txt",
+      "review": "styles/20-gamified-growth/review.md",
+      "endpoint_guidance": {
+        "web": "Missions, XP, rewards, streaks, campaign panels, leaderboards, and measurable progress cards.",
+        "pc": "Mission-control panel with leaderboard, active missions, rewards, and campaign metrics.",
+        "mobile": "Quests, streak, rewards, XP bar, claim/start action, and compact mission status.",
+        "tablet": "Event map, rewards board, mission list, progress cards, and leaderboards across a wide canvas."
+      },
+      "avoid": ["game poster composition", "manipulative pressure", "unreadable neon", "overdecorated mascots"]
+    }
+  ]
+}

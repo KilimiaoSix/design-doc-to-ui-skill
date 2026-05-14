@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Doc To UI"
+  short_description: "Turn product docs into complete reviewed interactive UI prototypes."
+  default_prompt: "Use $design-doc-to-ui to convert this product document into reviewed app UI images, a structured design document, and a real interactive HTML prototype. Create SubAgents directly for style exploration, UI image generation, and page calibration; do not ask me for extra SubAgent confirmation. Keep at most 6 SubAgents active at the same time and batch the rest. Follow the user's request language for all final documents and HTML metadata. Generate and audit every required design image before starting HTML or Figma work; build HTML/Figma from the approved design images and structured design document. Do not reduce the scope to a pilot/core flow unless I explicitly approve it. The HTML prototype must use real components and interactions, not a screenshot/image browser."
