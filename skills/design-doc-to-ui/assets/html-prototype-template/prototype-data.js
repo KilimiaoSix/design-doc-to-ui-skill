@@ -1,8 +1,8 @@
 window.PROTOTYPE_DATA = {
   lang: "zh-CN",
   title: "产品交互原型",
-  kicker: "Interactive Prototype",
-  summary: "用需求页面、单页评审结果和 HTML 交互规格替换这里的示例数据。",
+  kicker: "交互原型",
+  summary: "请用基于页面 brief、逐页评审结果和结构化设计文档生成的数据替换这个示例。",
   labels: {
     pages: "页面",
     status: "状态",

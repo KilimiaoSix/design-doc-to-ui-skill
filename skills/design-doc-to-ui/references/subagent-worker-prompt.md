@@ -13,6 +13,7 @@ Inputs:
 - source evidence for this page: <paste or paths>
 - style assets: <paths>
 - output directory: <path>
+- manifest page_id and expected artifact filenames from ui-run.json: <paste if available>
 
 Task:
 1. Confirm that the assigned brief covers exactly one source page and that its output language matches requested_output_language.
@@ -44,6 +45,7 @@ worker-result.json:
 }
 
 Do not mark approved unless the generated image exists and passes your review. Do not generate or review any other source page.
+Do not edit ui-run.json or any global manifest. The main agent will register your worker-result.json after you finish.
 ```
 
 If SubAgents are not available, do not run this contract sequentially in the main thread. Report the image-generation phase as blocked and name the missing SubAgent capability.

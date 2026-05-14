@@ -2,6 +2,8 @@
 
 Run this after all page workers return and before writing the final design document or HTML prototype.
 
+When a scripted run exists, run `scripts/ui_job_status.py --run-dir <output-run-dir>` before the audit and use `ui-run.json` as the page/artifact inventory.
+
 ## Audit Inputs
 
 - Original source document or summary
@@ -70,6 +72,14 @@ Before writing the structured design document, HTML prototype, or Figma prototyp
 - No style-sampling, page-generation, or regeneration SubAgent is still running.
 
 If this gate fails, do not start HTML or Figma work. A partial prototype is allowed only after the user explicitly approves partial output with the missing pages listed.
+
+After the structured design document is written, enforce the gate with:
+
+```bash
+python scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion
+```
+
+Treat `passed: false` or `html_allowed: false` as blocking. Do not start HTML/Figma from requirements alone.
 
 ## Final Functional Audit
 

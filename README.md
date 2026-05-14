@@ -20,6 +20,7 @@ skills/
 `design-doc-to-ui` turns PRDs, design docs, Feishu/Lark docs, Markdown specs, wireframes, screenshots, and brand assets into:
 
 - source-backed page inventory and requirements summary;
+- scripted `ui-run.json` manifests and gate validation;
 - custom style exploration with SubAgent-generated visual samples;
 - one approved UI image per required page;
 - per-page SubAgent review records;
@@ -35,6 +36,8 @@ The skill is intentionally strict: it blocks incomplete delivery instead of sile
 - Every required page image must be generated and reviewed by a page-level SubAgent.
 - At most 6 SubAgents may be active at the same time; larger runs are batched.
 - HTML and Figma prototypes start only after the design images and structured design document are complete.
+- `validate_design_run.py` blocks HTML/Figma until page briefs, worker artifacts, final images, main audit, and the structured design document all exist.
+- `build_prototype_data.py` generates route data from the approved run package so required pages are not dropped during HTML implementation.
 - HTML prototypes must use real components and interactions, not full-screen screenshot switching.
 - Final docs and prototype metadata follow the user's request language.
 
@@ -89,12 +92,28 @@ Use $design-doc-to-ui to convert this PRD into a full reviewed mobile app UI pac
 The skill will:
 
 1. ingest the source document and assets;
-2. derive a complete page inventory;
+2. derive a complete page inventory and initialize `ui-run.json`;
 3. explore and sample custom visual directions;
 4. generate and review every required page image with SubAgents;
-5. write the structured design document;
-6. build the HTML prototype from approved design images and documentation;
-7. optionally create or update Figma output when requested.
+5. register every worker result in the manifest;
+6. write the structured design document;
+7. run the design-completion script gate;
+8. build the HTML prototype from approved design images and documentation;
+9. optionally create or update Figma output when requested.
+
+## Scripted Gates
+
+The skill includes deterministic helper scripts under `skills/design-doc-to-ui/scripts/`:
+
+```bash
+python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-dir out/minihire --requested-output-language zh-CN
+python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/minihire
+python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/minihire --page-id home
+python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
+python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --copy-template
+```
+
+These scripts enforce the HatchPet-style manifest pattern: page count stays dynamic, but `page_inventory` becomes the single source of truth for worker jobs, approved images, docs, routes, and HTML/Figma eligibility.
 
 ## Validation
 
@@ -103,6 +122,14 @@ The skill folder validates with the official skill creator validator:
 ```bash
 python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui
 ```
+
+Representative script checks:
+
+- `prepare_ui_run.py` extracts a MiniHire fixture into 7 required pages.
+- `ui_job_status.py --batch-size 12` caps the next worker batch at 6.
+- `validate_design_run.py --phase design-completion` returns `html_allowed=false` before design artifacts and docs exist.
+- With mock worker artifacts, locked style contract, main audit, and structured design doc, the gate passes.
+- Missing brief, worker result, final image, structured doc, or prototype route each produce explicit blocker codes.
 
 Expected result:
 

@@ -2,6 +2,8 @@
 
 Create one page brief per required source page before image generation. The `page_inventory` in `app_requirements_summary` is the source of truth for delivery coverage.
 
+When a scripted run exists, `ui-run.json` is the canonical copy of `page_inventory`. Store each page brief at the `artifacts.brief_path` recorded for that page. `prepare_ui_run.py --write-brief-stubs` may create draft brief files, but the main agent must still complete them from the source document before spawning page workers.
+
 ## Page Brief
 
 ```json
@@ -91,3 +93,5 @@ Then verify:
 - No page is marked approved before its SubAgent worker artifacts exist.
 
 If this gate fails, repair the inventory or briefs before image generation. Do not proceed with a partial "core flow" unless the user explicitly approves reduced scope.
+
+Use `scripts/ui_job_status.py --run-dir <output-run-dir>` before spawning page workers. Pages with `state: missing_brief` are blocking failures. Pages with `state: ready_for_subagent` can be assigned to the next SubAgent batch, up to 6 active workers.

@@ -109,6 +109,14 @@ Create this before page briefs:
 
 ## Page Inventory Rules
 
+After `app_requirements_summary` is complete, initialize the run manifest:
+
+```bash
+python scripts/prepare_ui_run.py --source <normalized-source.md> --run-dir <output-run-dir> --requested-output-language <language>
+```
+
+If the page inventory was produced by the main agent instead of being parsed directly from a source file, write it as JSON and pass `--pages-json <page-inventory.json>`. The generated `ui-run.json` becomes the canonical source for required page count, routes, artifact paths, and HTML/Figma gates.
+
 - Derive `page_inventory` from source outline headings, prototype screenshots, named screens, user-flow steps, and explicit feature requirements.
 - Mark pages as `required_for_delivery: true` when they are source screens, required feature pages, main flow pages, or required states.
 - List optional pages too. Do not omit them; mark them optional and explain why.

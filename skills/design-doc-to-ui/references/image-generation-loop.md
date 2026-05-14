@@ -10,6 +10,7 @@ Before generating any UI screen image:
 - Keep at most 6 SubAgents active at the same time across the whole run, including style-sampling workers, page-generation workers, and regeneration workers.
 - If more than 6 pages need generation, start page workers in batches and wait for an active worker to finish before spawning the next worker.
 - Assign a disjoint output directory to that SubAgent.
+- Use the worker directory recorded in `ui-run.json` for the page whenever a scripted run exists.
 - Pass the `app_requirements_summary`, `global_style_contract`, assigned page brief, relevant style assets, source evidence, and output directory.
 - Do not ask the user to confirm normal SubAgent use; create the required SubAgent directly when the tool is available.
 - If SubAgents are unavailable or unable to access `image_gen`, stop the image-generation phase and report it as blocked. Do not generate the screen image in the main thread.
@@ -87,6 +88,14 @@ Each SubAgent must write these files in its assigned output directory:
 - the selected final image file referenced by `worker-result.json`
 
 The main agent must treat missing worker artifacts as a page failure, not as approval.
+
+After each worker returns, the main agent must register the result:
+
+```bash
+python scripts/record_ui_worker_result.py --run-dir <output-run-dir> --page-id <page_id>
+```
+
+Pass explicit `--worker-dir`, `--worker-result`, `--review`, `--prompt-history`, or `--final-image` only when the worker used non-default paths. Do not let page SubAgents edit `ui-run.json`; they own only their assigned output directory.
 
 ## Review Criteria
 

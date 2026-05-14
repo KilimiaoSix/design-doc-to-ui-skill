@@ -1,6 +1,8 @@
 # Structured Design Document Output
 
-Generate a structured design document after the Design Completion Gate passes and before HTML/Figma implementation begins. This document is the source of truth for HTML and Figma prototype implementation.
+Generate a structured design document after the main-agent audit passes and before HTML/Figma implementation begins. This document is the source of truth for HTML and Figma prototype implementation.
+
+In a scripted run, write the document to the `structured_design_doc` path recorded in `ui-run.json` unless the user requests another path. The document must exist before `validate_design_run.py --phase design-completion` can allow HTML/Figma.
 
 ## Language Rules
 
@@ -55,7 +57,7 @@ Use equivalent headings in `requested_output_language`. For Chinese output, use:
 ## 13. 开放问题与风险
 ```
 
-For other languages, translate the same structure rather than reusing the Chinese or English labels.
+For other languages, translate the same structure rather than reusing Chinese or English labels.
 
 ## Required Coverage
 

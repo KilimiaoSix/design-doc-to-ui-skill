@@ -11,22 +11,46 @@ Use this skill to turn a source product/design document into an approved UI desi
 
 1. Ingest the source document and assets.
 2. Produce an `app_requirements_summary` with `source_language`, `requested_output_language`, and `page_inventory`.
-3. Run the SubAgent Direct-Use Gate.
-4. Run the Style Exploration Gate before page generation.
-5. Run the Page Coverage Gate.
-6. Create one page brief for every required page.
-7. Run one page-level SubAgent for each required page to generate the UI image and complete page calibration/review.
-8. Run the Per-Page SubAgent Gate.
-9. Perform the main-agent audit across all pages.
-10. Run the Design Completion Gate.
-11. Generate a structured design document in `requested_output_language`.
-12. Generate a local component-level interactive HTML prototype folder from the completed design images and structured design document.
-13. Optionally create/update Figma prototype content from the completed design images and structured design document only when the user has provided Figma context or requested Figma.
-14. Perform the Final Functional Audit on the HTML prototype and any requested Figma prototype.
+3. Initialize a scripted run manifest with `scripts/prepare_ui_run.py`; `ui-run.json` becomes the single source of truth for page count, artifacts, and gates.
+4. Run the SubAgent Direct-Use Gate.
+5. Run the Style Exploration Gate before page generation.
+6. Run the Page Coverage Gate against `ui-run.json`.
+7. Create one page brief for every required page.
+8. Use `scripts/ui_job_status.py` to plan page worker batches of at most 6 active SubAgents.
+9. Run one page-level SubAgent for each required page to generate the UI image and complete page calibration/review.
+10. After each page worker returns, use `scripts/record_ui_worker_result.py` from the main thread to register its artifacts in `ui-run.json`.
+11. Run the Per-Page SubAgent Gate.
+12. Perform the main-agent audit across all pages.
+13. Generate a structured design document in `requested_output_language`.
+14. Run `scripts/validate_design_run.py --phase design-completion`; HTML/Figma remains blocked unless this passes with `html_allowed: true`.
+15. Generate `prototype/prototype-data.js` with `scripts/build_prototype_data.py`, then generate a local component-level interactive HTML prototype folder from the completed design images and structured design document.
+16. Optionally create/update Figma prototype content from the completed design images and structured design document only when the user has provided Figma context or requested Figma.
+17. Perform the Final Functional Audit on the HTML prototype and any requested Figma prototype.
 
 Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, or Final Functional Audit.
 
 Do not silently reduce scope with labels such as "pilot", "core flow", "trial", or "MVP slice". A page from `page_inventory` may be deferred only when the user explicitly approves the deferral; record it as `user-approved deferred`, not approved.
+
+## Scripted Run Manifest
+
+Use the bundled scripts whenever filesystem access is available. These scripts do not replace design judgment; they prevent missing pages, forged completion, premature HTML/Figma work, and manifest drift.
+
+Start every run with:
+
+```bash
+python scripts/prepare_ui_run.py --source <source.md> --run-dir <output-run-dir> --requested-output-language <language>
+```
+
+If the source page list is already extracted as JSON, pass it with `--pages-json`. If useful, `--write-brief-stubs` can create draft brief JSON files that must still be completed from the source before page generation.
+
+Use these scripts during the run:
+
+- `scripts/ui_job_status.py --run-dir <output-run-dir>`: show missing/ready/approved pages and the next page-worker batch, capped at 6.
+- `scripts/record_ui_worker_result.py --run-dir <output-run-dir> --page-id <page_id>`: register a returned SubAgent worker directory and final image.
+- `scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion`: block or allow HTML/Figma.
+- `scripts/build_prototype_data.py --run-dir <output-run-dir> --copy-template`: generate `prototype/prototype-data.js` from the approved run package.
+
+Do not let a SubAgent edit `ui-run.json` directly. SubAgents write only their assigned worker directory; the main agent records worker artifacts with `record_ui_worker_result.py`.
 
 ## Source Ingestion
 
@@ -66,6 +90,8 @@ Read `references/style-gate.md` before page image generation.
 Read `references/page-brief-schema.md` before generating screens.
 
 Create `page_inventory` from the source outline, product sections, prototype images, screen lists, user flows, and explicit requirements. Treat `page_inventory` as the delivery source of truth.
+
+When `ui-run.json` exists, treat its `page_inventory` as the canonical delivery inventory. If you discover missing source pages later, update `app_requirements_summary`, rerun or repair `ui-run.json`, and re-check coverage before image generation.
 
 Before page generation, verify:
 
@@ -112,6 +138,8 @@ After workers return, verify that every required page has:
 
 Do not count a page as approved when any required worker artifact is missing.
 
+Run `scripts/record_ui_worker_result.py` for each returned page worker before this gate. Then run `scripts/ui_job_status.py` to verify there are no unregistered or missing required pages.
+
 ## Main Audit
 
 Read `references/main-audit.md` after page workers return.
@@ -135,6 +163,14 @@ The design phase is complete only when:
 
 If any required page is `blocked`, `infeasible`, or missing an approved final image, do not generate HTML/Figma by default. Generate a partial HTML/Figma prototype only if the user explicitly approves a partial prototype after the missing pages are listed.
 
+After the structured design document exists, enforce this gate with:
+
+```bash
+python scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion
+```
+
+Proceed to HTML/Figma only when the script reports `passed: true` and `html_allowed: true`.
+
 ## Structured Design Document
 
 Read `references/design-doc-output.md`.
@@ -146,6 +182,14 @@ Generate the structured design document before HTML/Figma implementation. Includ
 Read `references/html-prototype.md`.
 
 Do not begin HTML implementation until the Design Completion Gate has passed and the structured design document exists. Build the HTML prototype from the approved design images, structured design document, page briefs, and worker reviews. Do not build HTML from requirements alone while design images are still pending. After HTML is generated and audited, update the structured design document with the HTML path and audit result.
+
+Generate or verify the prototype data layer with:
+
+```bash
+python scripts/build_prototype_data.py --run-dir <output-run-dir> --copy-template
+```
+
+Use the generated `prototype/prototype-data.js` as the route/page coverage baseline. Custom HTML/CSS/JS may extend it, but must not remove required routes or declared interactions.
 
 Default output is a local folder, not a hosted link:
 
@@ -188,6 +232,7 @@ Before finishing, report:
 - `requested_output_language`.
 - Custom style directions explored, style samples generated, selected style, and whether the user confirmed it.
 - Page coverage count: source required pages, page briefs, worker results, approved/blocked/deferred pages, HTML routes.
+- Script gate results: `ui-run.json`, latest validation report, and prototype-data report.
 - Pages generated and each page's review status.
 - Design Completion Gate result.
 - Structured design document path.

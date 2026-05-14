@@ -1,27 +1,27 @@
 <!doctype html>
-<html lang="und">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>交互原型</title>
+    <title>产品交互原型</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <div>
-          <p class="eyebrow" id="prototype-kicker">Prototype</p>
-          <h1 id="prototype-title">交互原型</h1>
+          <p class="eyebrow" id="prototype-kicker">交互原型</p>
+          <h1 id="prototype-title">产品交互原型</h1>
           <p class="summary" id="prototype-summary">请用生成的页面数据替换 prototype-data.js。</p>
         </div>
-        <nav class="route-list" id="route-list" aria-label="Pages"></nav>
+        <nav class="route-list" id="route-list" aria-label="页面"></nav>
       </aside>
 
       <main class="workspace">
         <section class="topbar" aria-live="polite">
           <div>
-            <p class="eyebrow" id="page-status">Status</p>
-            <h2 id="page-title">Page</h2>
+            <p class="eyebrow" id="page-status">状态</p>
+            <h2 id="page-title">页面</h2>
           </div>
           <div class="view-actions" id="view-actions"></div>
         </section>
@@ -49,7 +49,7 @@
         status: "状态",
         actions: "操作",
         controls: "控件",
-        states: "状态",
+        states: "页面状态",
         reference: "视觉参考",
         close: "关闭",
         saved: "已保存",
@@ -73,9 +73,9 @@
       const dialogClose = document.getElementById("dialog-close");
 
       document.documentElement.lang = data.lang || data.language || "zh-CN";
-      document.title = data.title || "交互原型";
-      document.getElementById("prototype-kicker").textContent = data.kicker || "Prototype";
-      document.getElementById("prototype-title").textContent = data.title || "交互原型";
+      document.title = data.title || "产品交互原型";
+      document.getElementById("prototype-kicker").textContent = data.kicker || "交互原型";
+      document.getElementById("prototype-title").textContent = data.title || "产品交互原型";
       document.getElementById("prototype-summary").textContent =
         data.summary || "请用生成的页面数据替换 prototype-data.js。";
       routeList.setAttribute("aria-label", labels.pages);
