@@ -1,5 +1,7 @@
 # Design Doc To UI Skill
 
+[中文文档](README.zh-CN.md)
+
 Installable Codex skill for converting product/design documents into complete reviewed UI design packages.
 
 This repository follows the common Codex skill catalog layout:
