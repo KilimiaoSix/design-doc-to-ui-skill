@@ -37,7 +37,7 @@ def main() -> int:
     parser.add_argument("--main-audit-status", default="pending")
     args = parser.parse_args()
 
-    run_dir = Path(args.run_dir)
+    run_dir = Path(args.run_dir).resolve()
     manifest = load_manifest(run_dir)
     page = find_page(manifest, args.page_id)
     artifacts = page_artifacts(page)

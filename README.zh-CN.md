@@ -22,9 +22,9 @@ skills/
 - 每个 required 页面各 1 张由 imagegen 生成并评审的 UI 图；
 - 每页独立 SubAgent 的评审记录；
 - 与请求语言一致的结构化设计文档，包含设计思想、页面联动和所有页面生成图；
-- 可本地运行的 React 小前端项目，使用真实组件复刻已批准 AI 页面图并实现交互；
+- 可本地运行的 React 小前端项目，由主 agent 先创建框架、路由、共享样式和页面槽位，再由页面级 SubAgent 细化页面并自审，使用真实组件复刻已批准 AI 页面图并实现交互；
 - 用户明确要求时，交付飞书/Lark 富文档；
-- 用户明确要求时，交付 Figma 可编辑复刻原型。
+- 用户明确要求时，交付 Figma 可编辑复刻原型，使用页面级 frame worker 和主 agent 全局 prototype link 验证。
 
 这个 skill 的策略是宁可阻断，也不静默缩水。页面缺失、SubAgent 证据缺失、审计缺失、React/Figma 提前开始，都会被视为 blocker。
 
@@ -44,7 +44,9 @@ skills/
 - 每个 required 页面图都必须由页面级 SubAgent 生成和评审。
 - 同时最多 6 个活跃 SubAgent；页面多时必须分批。
 - React 和 Figma 只能在设计图、主审计和结构化设计文档完成后开始。
-- React 默认输出 Vite 小前端项目，不能只是整页图片浏览器。
+- React 默认输出 Vite 小前端项目，不能只是整页图片浏览器；主 agent 必须先创建 app shell、route registry、style system、page slots 和 worker ownership map。
+- React 页面 worker 必须登记到 `prototype/qa/react-page-worker-registry.json`；主 agent 必须通过 `react-navigation-audit.json` 验证全局路由、跨页状态和完整跳转流。
+- Figma 必须先通过 `qa/figma-scaffold-audit.json`，页面 worker 必须登记到 `qa/figma-page-worker-registry.json`，并通过 `qa/figma-prototype-link-plan.json` 与 `qa/figma-integration-audit.json`。
 - React/Figma 复刻按逐页分数判断，单页低于 `0.80` 即失败。
 - 最终文档、React 元数据、飞书/Figma 输出都跟随用户请求语言。
 
@@ -112,7 +114,7 @@ foreach ($skill in $skills) {
 5. 主线程用脚本登记每个 worker 结果。
 6. 生成包含设计思想、页面联动和页面图的结构化设计文档。
 7. 运行 design-completion 门禁。
-8. 基于已批准设计图和设计文档生成 React 原型。
+8. 先生成 React 框架，再登记页面级 React worker，并完成全局导航审计。
 9. 使用视觉审计 companion 检查并修复，直到每页达到 `0.80`。
 10. 用户要求时，使用飞书 companion 上传富文档。
 11. 用户要求时，使用 Figma companion 创建或更新可编辑复刻原型。
@@ -129,6 +131,8 @@ python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/
 python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/minihire --require-all
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
 python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
+python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --review prototype/qa/react-page-workers/home/review.md
+python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --review qa/figma-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
 ```
 
@@ -174,7 +178,7 @@ python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/de
 - 设计图、worker 结果、主审计和结构化文档不完整时，`validate_design_run.py --phase design-completion` 返回 `react_allowed=false`；
 - 补齐 mock worker 产物、锁定风格、主审计和结构化设计文档后，design-completion gate 通过；
 - `build_prototype_data.py --template react --copy-template` 生成包含全部 required route 的 React 项目；
-- 缺 companion、缺视觉审计、缺飞书审计、缺 Figma 审计、缺 route、缺 page brief、缺 worker-result、缺 final image、缺结构化文档都会输出明确 blocker code。
+- 缺 React scaffold audit、React 页面 worker registry、React navigation audit、Figma scaffold audit、Figma 页面 worker registry、Figma prototype link plan、Figma integration audit、companion、视觉审计、飞书审计、route、page brief、worker-result、final image、结构化文档都会输出明确 blocker code。
 
 ## 仓库说明
 

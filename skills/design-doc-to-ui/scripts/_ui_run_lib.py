@@ -277,6 +277,50 @@ def structured_doc_ready(run_dir: Path, manifest: dict[str, Any]) -> bool:
     return bool(path and path.exists() and path.stat().st_size > 0)
 
 
+def structured_doc_quality_passed(run_dir: Path, manifest: dict[str, Any]) -> bool:
+    artifacts = manifest.get("artifacts") or {}
+    path = resolve_run_path(run_dir, artifacts.get("structured_design_doc_audit"))
+    if not path or not path.exists():
+        return False
+    try:
+        data = load_json(path)
+    except Exception:
+        return False
+    if not isinstance(data, dict):
+        return False
+    if data.get("passed") is not True:
+        return False
+    try:
+        quality_score = float(data.get("quality_score"))
+    except (TypeError, ValueError):
+        return False
+    return quality_score >= 0.85 and not data.get("blockers")
+
+
+def artifact_json_passed(run_dir: Path, manifest: dict[str, Any], key: str) -> bool:
+    artifacts = manifest.get("artifacts") or {}
+    path = resolve_run_path(run_dir, artifacts.get(key))
+    if not path or not path.exists():
+        return False
+    try:
+        data = load_json(path)
+    except Exception:
+        return False
+    return isinstance(data, dict) and data.get("passed") is True
+
+
+def artifact_json_object(run_dir: Path, manifest: dict[str, Any], key: str) -> dict[str, Any]:
+    artifacts = manifest.get("artifacts") or {}
+    path = resolve_run_path(run_dir, artifacts.get(key))
+    if not path or not path.exists():
+        return {}
+    try:
+        data = load_json(path)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def page_brief_ready(run_dir: Path, page: dict[str, Any]) -> bool:
     path = resolve_run_path(run_dir, page_artifacts(page).get("brief_path"))
     if not path or not path.exists():
@@ -305,6 +349,42 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
     )
     status["main_audit_passed"] = audit_passed(run_dir, manifest)
     status["structured_design_doc_ready"] = structured_doc_ready(run_dir, manifest)
+    status["structured_design_doc_quality_passed"] = structured_doc_quality_passed(run_dir, manifest)
+    prototype_data_path = resolve_run_path(run_dir, (manifest.get("artifacts") or {}).get("prototype_data"))
+    status["prototype_data_ready"] = bool(prototype_data_path and prototype_data_path.exists())
+    status["react_scaffold_passed"] = artifact_json_passed(run_dir, manifest, "react_scaffold_audit")
+    status["react_page_worker_registry_passed"] = artifact_json_passed(run_dir, manifest, "react_page_worker_registry")
+    status["react_navigation_audit_passed"] = artifact_json_passed(run_dir, manifest, "react_navigation_audit")
+    status["react_worker_passed"] = artifact_json_passed(run_dir, manifest, "react_worker_result")
+    status["react_interaction_audit_passed"] = artifact_json_passed(run_dir, manifest, "react_interaction_audit")
+    react_result = artifact_json_object(run_dir, manifest, "react_worker_result")
+    react_audit = artifact_json_object(run_dir, manifest, "react_interaction_audit")
+    page_count = len(pages)
+    react_page_results = react_result.get("page_worker_results") or []
+    status["react_page_workers_passed"] = (
+        isinstance(react_page_results, list)
+        and page_count > 0
+        and len([item for item in react_page_results if isinstance(item, dict) and item.get("passed") is True])
+        >= page_count
+    )
+    status["global_navigation_passed"] = (
+        react_result.get("global_navigation_passed") is True
+        and react_audit.get("global_navigation_passed") is True
+    )
+    status["figma_worker_passed"] = artifact_json_passed(run_dir, manifest, "figma_worker_result")
+    status["figma_scaffold_passed"] = artifact_json_passed(run_dir, manifest, "figma_scaffold_audit")
+    status["figma_page_worker_registry_passed"] = artifact_json_passed(run_dir, manifest, "figma_page_worker_registry")
+    status["figma_prototype_link_plan_passed"] = artifact_json_passed(run_dir, manifest, "figma_prototype_link_plan")
+    status["figma_integration_audit_passed"] = artifact_json_passed(run_dir, manifest, "figma_integration_audit")
+    figma_result = artifact_json_object(run_dir, manifest, "figma_worker_result")
+    figma_page_results = figma_result.get("page_worker_results") or []
+    status["figma_page_workers_passed"] = (
+        isinstance(figma_page_results, list)
+        and page_count > 0
+        and len([item for item in figma_page_results if isinstance(item, dict) and item.get("passed") is True])
+        >= page_count
+    )
+    status["figma_global_prototype_links_passed"] = figma_result.get("global_prototype_links_passed") is True
     status["no_active_subagents"] = not active_subagents(manifest)
     allowed = all(
         [
@@ -313,6 +393,7 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
             status["all_required_designs_approved"],
             status["main_audit_passed"],
             status["structured_design_doc_ready"],
+            status["structured_design_doc_quality_passed"],
             status["no_active_subagents"],
         ]
     )

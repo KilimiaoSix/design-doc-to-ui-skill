@@ -1,4 +1,4 @@
 interface:
   display_name: "Design Doc To UI"
-  short_description: "Turn product docs into reviewed UI images, React prototypes, and gated Feishu/Figma delivery."
-  default_prompt: "Use $design-doc-to-ui to convert this product document into imagegen-generated UI page images, a structured design document with design thinking and page linkage, and a runnable React prototype that visually recreates approved images. Initialize ui-run.json, create SubAgents directly, keep at most 6 active SubAgents, run companion skill gates, require visual audit at 0.80 per page, and use Feishu/Figma companion skills only when those outputs are requested."
+  short_description: "Create and revise gated UI design packages."
+  default_prompt: "Use $design-doc-to-ui to convert or revise this product document into imagegen-generated UI page images, a quality-gated structured design document, and a runnable React prototype where the main agent first creates the app shell/style scaffold and page-worker ownership map, then page SubAgents implement and self-review detailed routes with at most 6 active workers, preserving ui-run.json gates, structured-design-doc audit, formal frontend interaction verification, user-feedback revision logs, 0.80 visual parity, and optional Feishu/Figma companion delivery only when requested."

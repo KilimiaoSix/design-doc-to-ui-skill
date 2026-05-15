@@ -1,4 +1,4 @@
 interface:
   display_name: "Design Doc To UI Visual Audit"
-  short_description: "Audit React or Figma visual parity at page level."
-  default_prompt: "Use $design-doc-to-ui-visual-audit to compare approved AI UI images with rendered React route screenshots or Figma frame screenshots. Score every required page with the rubric, fail pages below 0.80 or any hard failure, and write qa/visual-parity-audit.json plus repair prompts."
+  short_description: "Audit page replication, parity, and interactions."
+  default_prompt: "Use $design-doc-to-ui-visual-audit to compare approved AI UI images with rendered React route screenshots or Figma frame screenshots. Score every required page, require baseline replication, fail pages below 0.80 or any hard failure including broken React interactions or missing Figma prototype links, and write qa/visual-parity-audit.json plus repair prompts."

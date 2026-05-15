@@ -1,6 +1,6 @@
 # React Prototype
 
-Default prototype output is a local runnable React frontend project. It must visually recreate the approved AI-generated page images and include the declared interactions.
+Default prototype output is a local runnable React frontend project. It must basically replicate the approved AI-generated page images and include the declared interactions. Treat this as a formal frontend demo, not a clickable image mockup.
 
 ## Prerequisites
 
@@ -10,7 +10,8 @@ Do not start React implementation until:
 - every non-deferred required page has an approved final design image;
 - the main-agent audit has passed;
 - no style-sampling, page-generation, or regeneration SubAgent is still running;
-- the structured design document exists.
+- the structured design document exists;
+- `qa/structured-design-doc-audit.json` has passed.
 
 Before creating or editing the prototype, run:
 
@@ -35,6 +36,12 @@ prototype/
   assets/
   screens/
   qa/
+    react-scaffold-audit.json
+    react-page-worker-registry.json
+    react-navigation-audit.json
+    react-worker-result.json
+    react-interaction-audit.json
+    react-page-workers/
 ```
 
 Use `assets/react-prototype-template/` as the starting project when useful.
@@ -46,6 +53,103 @@ python scripts/build_prototype_data.py --run-dir <output-run-dir> --template rea
 ```
 
 The script writes `prototype/src/prototype-data.js` and `prototype/prototype-data-report.json`.
+
+## Process Management Files
+
+React prototype work must be managed through intermediate files, not only a final demo folder. Treat these files as the React equivalent of page-image worker outputs in `ui-run.json`:
+
+- `prototype/prototype-data-report.json`: route/page source of truth generated from the approved page inventory.
+- `prototype/qa/react-scaffold-audit.json`: main-agent scaffold, style system, route registry, page slots, and ownership map.
+- `prototype/qa/react-page-worker-registry.json`: main-thread registry of every React page worker result.
+- `prototype/qa/react-page-workers/<page_id>/worker-result.json`: page worker implementation result.
+- `prototype/qa/react-page-workers/<page_id>/interaction-audit.json`: page-local interaction audit.
+- `prototype/qa/react-page-workers/<page_id>/review.md`: page worker self-review and repair notes.
+- `prototype/qa/react-navigation-audit.json`: main-agent global navigation, route target, cross-page state, and recovery-flow audit.
+- `prototype/qa/react-worker-result.json`: aggregate implementation result.
+- `prototype/qa/react-interaction-audit.json`: aggregate interaction and whole-flow audit.
+- `qa/visual-parity-audit.json`: visual parity gate against approved design images.
+
+After each React page worker returns, register it from the main thread:
+
+```bash
+python scripts/record_react_page_worker_result.py \
+  --run-dir <output-run-dir> \
+  --page-id <page_id> \
+  --worker-result prototype/qa/react-page-workers/<page_id>/worker-result.json \
+  --interaction-audit prototype/qa/react-page-workers/<page_id>/interaction-audit.json \
+  --review prototype/qa/react-page-workers/<page_id>/review.md
+```
+
+The registry must contain one passing page entry per non-deferred required page before the main agent writes aggregate React results.
+
+## Main-Agent React Scaffold Gate
+
+Before starting page-level React workers, the main agent must create the shared React scaffold that all workers will build inside. This is a main-agent responsibility because it sets product-level style, prevents page workers from drifting into unrelated designs, and establishes the route contract before parallel page work begins.
+
+The scaffold must include:
+
+- app shell and route registry based on `prototype/src/prototype-data.js`;
+- stable page slots or page modules for every non-deferred required route;
+- shared layout primitives, base components, CSS variables/tokens, typography, spacing, radius, color, and interaction state conventions;
+- responsive constraints and shared navigation patterns;
+- page worker ownership map showing which files each worker may edit;
+- integration contract for outbound route targets and shared state.
+
+Write `prototype/qa/react-scaffold-audit.json` before starting page workers:
+
+```json
+{
+  "passed": true,
+  "app_shell_created": true,
+  "route_registry_created": true,
+  "style_system_locked": true,
+  "page_slots_created": true,
+  "worker_ownership_map_created": true,
+  "shared_navigation_contract_created": true,
+  "required_page_count": 7,
+  "page_slots": [
+    {
+      "page_id": "home",
+      "route": "#home",
+      "owned_files": ["prototype/src/pages/Home.jsx"]
+    }
+  ],
+  "hard_failures": []
+}
+```
+
+Do not start React page workers until this audit exists and has `passed: true`. Page workers must use the scaffold, style tokens, and owned file map instead of creating their own global layout or style system.
+
+## React Page Worker Gate
+
+After prototype data is generated and `prototype/qa/react-scaffold-audit.json` has passed, start one page-level React SubAgent per non-deferred required page using `references/react-prototype-worker-prompt.md`.
+
+Run page workers in batches with at most 6 active SubAgents across the whole design-doc-to-ui run. A page worker owns exactly one route/page and its local states/interactions. It must not own unrelated pages or global router logic.
+
+Each page worker must implement its assigned page as a real component-level frontend slice:
+
+- read the original requirements/source bundle, approved AI page images, page briefs, structured design document, style contract, worker reviews, main audit, and generated prototype data;
+- read `prototype/qa/react-scaffold-audit.json`, shared style tokens/CSS, route registry, and the worker ownership map;
+- implement the assigned route/view from `prototype/src/prototype-data.js`;
+- work only inside the assigned page slot and owned files unless the main agent explicitly grants shared-file ownership;
+- follow the main-agent style system and page frame instead of redefining product-level visual direction;
+- implement page-local interactions according to the original requirements and structured design document, not only the visual image;
+- test the assigned route and page-local interaction states locally;
+- record outbound route targets and shared state dependencies for main-agent integration;
+- repair visual and behavioral issues before returning;
+- write `prototype/qa/react-page-workers/<page_id>/worker-result.json`, `prototype/qa/react-page-workers/<page_id>/interaction-audit.json`, and `prototype/qa/react-page-workers/<page_id>/review.md`.
+
+After all page workers return, the main agent owns:
+
+- shared app shell, shared components, and route table integration;
+- cross-page state, navigation guards, back/retry/recovery routes, and handoff between pages;
+- whole-product flow verification;
+- `prototype/qa/react-navigation-audit.json`;
+- aggregate `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json`.
+
+Do not mark the React phase complete from the main thread alone. If React page SubAgent capability is technically unavailable, mark React prototype generation blocked. Do not replace required page workers with a quick main-thread implementation.
+
+React page workers must not edit `ui-run.json`, page briefs, design image worker outputs, unrelated routes, or unrelated files.
 
 ## Runtime Setup
 
@@ -59,7 +163,15 @@ The React prototype is expected to run locally.
 
 ## Visual Recreation Requirement
 
-The React UI must be rebuilt as components, not shown as full-screen screenshots.
+The React UI must be rebuilt as components, not shown as full-screen screenshots. Treat the approved AI page image as the visual contract, not a loose mood board.
+
+Explicitly forbidden implementations:
+
+- full-page approved image rendered as the app UI;
+- image hotspot maps;
+- screenshot carousel/image browser with route labels;
+- fake controls overlaid on static images;
+- primary UI implemented as non-semantic absolute-positioned overlays when components could be built normally.
 
 For every required page, use the approved AI page image as the visual source of truth for:
 
@@ -69,6 +181,14 @@ For every required page, use the approved AI page image as the visual source of 
 - button styles, tab/segmented controls, chips, inputs, dialogs, toasts, and selectors;
 - colors, accent use, icon style, mascot/illustration placement, and image-derived decorative elements;
 - default, success, error, empty, loading, modal, and blocked states declared in the brief.
+
+Baseline replication means:
+
+- major regions appear in the same order and relative position as the approved image;
+- primary navigation, page title, hero/summary area, core content blocks, and primary actions are all present;
+- component shapes, density, color palette, type scale, and visual rhythm remain recognizably the same;
+- responsive adjustments preserve hierarchy instead of collapsing into a different product layout;
+- intentional deviations are documented in the visual parity report with a practical reason.
 
 Generated page images may be used as:
 
@@ -89,6 +209,32 @@ Implement the interactions declared by page briefs and design documentation:
 
 If a visual element exists only in the approved image but not in the page brief, still recreate it visually unless it conflicts with a documented requirement.
 
+React is not complete when it only looks correct. Primary interactions must be exercised and either work or be explicitly marked blocked with the reason. Dead primary buttons, broken route targets, inactive controls that appear interactive, unreachable modals/states, and missing success/error/empty states are hard failures.
+
+Each page worker must verify page-local behavior against the original requirements, page brief, and structured design document. The main agent must verify cross-page behavior against all `route_targets`, page-worker outbound route records, and whole-product flows. When sources conflict, document the conflict and follow the structured design document only if it explicitly resolved the requirement; otherwise mark the flow blocked for main-agent review.
+
+## React Worker Output Gate
+
+Before visual parity scoring, require:
+
+- `prototype/qa/react-worker-result.json` exists and has `passed: true`;
+- `implementation_type` is `component_frontend`;
+- `screenshot_or_hotspot_demo` is `false`;
+- `main_agent_scaffold_passed`, `style_system_locked`, `page_workers_started_after_scaffold`, and `page_workers_used_shared_scaffold` are `true`;
+- `all_required_routes_implemented`, `all_declared_interactions_implemented`, `source_requirements_aligned`, `structured_design_doc_aligned`, and `approved_images_replicated` are all `true`;
+- `max_active_subagents` is present and is no greater than `6`;
+- `global_navigation_passed` and `cross_page_state_passed` are `true`;
+- `implemented_route_count` is at least the non-deferred required page count;
+- `prototype/qa/react-page-worker-registry.json` exists, has `passed: true`, and registers every required page worker;
+- `prototype/qa/react-navigation-audit.json` exists, has `passed: true`, and verifies global navigation plus cross-page state;
+- `page_worker_results` contains one passing result for every non-deferred required page;
+- `prototype/qa/react-interaction-audit.json` exists and has `passed: true`;
+- every required page has a passing interaction audit entry;
+- the aggregate interaction audit has `global_navigation_passed: true` and passing `cross_page_flow_results`;
+- `hard_failures` and `unresolved_blockers` are empty.
+
+If this gate fails, repair the prototype or mark the exact failing flow blocked. Do not proceed to Feishu/Figma delivery with a failed React worker gate.
+
 ## React Visual Parity Gate
 
 After implementation:
@@ -108,10 +254,11 @@ The comparison may be manual, model-assisted, or script-assisted, but the report
 - whole-page image used as the implementation;
 - visible copy in the wrong language;
 - layout overlap or unreadable text.
+- broken primary interactions, dead navigation targets, or unreachable declared states.
 
 Do not mark Final Functional Audit as passed until visual parity is passed or every failure is explicitly blocked with a reason.
 
-Write `prototype/qa/visual-parity-report.md` for human review and `qa/visual-parity-audit.json` for script gates. The JSON audit must include one entry per required page and every `visual_similarity_score` must be at least `0.80`.
+Write `prototype/qa/visual-parity-report.md` for human review and `qa/visual-parity-audit.json` for script gates. The JSON audit must include one entry per required page and every `visual_similarity_score` must be at least `0.80`. It must also record interaction hard failures separately from visual scores so a visually similar but non-functional prototype cannot pass.
 
 ## Verification
 
@@ -119,8 +266,10 @@ Before final response:
 
 - Confirm `package.json`, `index.html`, `src/main.jsx`, `src/styles.css`, and `src/prototype-data.js` exist.
 - Confirm every non-deferred required page has one route/view in `src/prototype-data.js`.
+- Confirm `prototype/qa/react-scaffold-audit.json` exists, passes, covers every required page slot, and locks the shared style system before page worker outputs.
 - Confirm every linked approved AI reference image exists.
 - Confirm `prototype/prototype-data-report.json` exists and route count covers all non-deferred required pages.
+- Confirm `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json` exist and pass.
 - Run `npm install` if dependencies are missing.
 - Run `npm run build` when feasible.
 - Run the React app locally and inspect routes/interactions when browser tools are available.

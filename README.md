@@ -24,9 +24,9 @@ skills/
 - one imagegen-generated and reviewed UI image per required page;
 - per-page SubAgent review records;
 - a structured design document in the request language, including design thinking, page linkage, and generated page images;
-- a runnable local React frontend project that visually recreates the approved AI page images and implements interactions;
+- a runnable local React frontend project that starts from a main-agent scaffold, uses page-level SubAgents for detailed page implementation, visually recreates the approved AI page images, and implements verified interactions;
 - optional rich Feishu/Lark document delivery when requested;
-- optional editable Figma replica delivery when requested.
+- optional editable Figma replica delivery when requested, using page-level frame workers plus global prototype-link validation.
 
 The skill is intentionally strict: incomplete page coverage, missing SubAgent evidence, missing audits, or premature React/Figma work are blockers.
 
@@ -46,7 +46,9 @@ If a required companion skill is missing or unreadable, that delivery stage is b
 - Every required page image must be generated and reviewed by a page-level SubAgent.
 - At most 6 SubAgents may be active at the same time; larger runs are batched.
 - React and Figma work starts only after design images, main audit, and structured design document are complete.
-- React output is a component-level Vite project, not an image viewer.
+- React output is a component-level Vite project, not an image viewer. The main agent must first create the app shell, route registry, style system, page slots, and worker ownership map.
+- React page workers are registered in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.
+- Figma output must start from `qa/figma-scaffold-audit.json`, register page workers in `qa/figma-page-worker-registry.json`, and pass `qa/figma-prototype-link-plan.json` plus `qa/figma-integration-audit.json`.
 - React and Figma visual parity are judged per page. Average score cannot hide a failed page.
 - Final docs, React metadata, and optional Feishu/Figma outputs follow the user's request language.
 
@@ -129,7 +131,7 @@ The main flow:
 5. Register worker results in the manifest.
 6. Write a structured design document with design thinking, page linkage, and page images.
 7. Run the design-completion gate.
-8. Build a local React prototype from approved design images and documentation.
+8. Build the React scaffold, register page-level React workers, and run global navigation audit.
 9. Run visual parity audit and repair until every page reaches `0.80`.
 10. Upload rich Feishu/Lark docs only when requested.
 11. Create or update Figma replica only when requested.
@@ -146,6 +148,8 @@ python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/
 python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/minihire --require-all
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
 python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
+python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --review prototype/qa/react-page-workers/home/review.md
+python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --review qa/figma-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
 ```
 
@@ -169,7 +173,7 @@ Representative regression checks:
 - `validate_design_run.py --phase design-completion` returns `react_allowed=false` before design artifacts and docs exist.
 - With mock worker artifacts, locked style contract, main audit, and structured design doc, the design-completion gate passes.
 - `build_prototype_data.py --template react --copy-template` creates a runnable React project with all required routes.
-- Missing companion skills, visual parity audit, Feishu audit, Figma audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
+- Missing React scaffold audit, React page worker registry, React navigation audit, Figma scaffold audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
 
 ## Notes
 
