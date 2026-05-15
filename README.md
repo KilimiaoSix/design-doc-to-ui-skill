@@ -1,63 +1,79 @@
 # Design Doc To UI Skill
 
-[中文文档](README.zh-CN.md)
+这是一个可安装的 Codex Skill 包，用于把 PRD、产品设计文档、飞书/Lark 文档、Markdown 规格、线框图、截图和品牌素材，转换成经过阶段确认的 UI 设计包。
 
-Installable Codex skill package for converting product/design documents into complete reviewed UI design deliverables.
-
-This repository now uses a main skill plus three companion skills:
+当前仓库包含 1 个主 skill 和 3 个 companion skill：
 
 ```text
 skills/
-  design-doc-to-ui/                 # main orchestrator
-  design-doc-to-ui-feishu-doc/      # rich Feishu/Lark document delivery
-  design-doc-to-ui-figma-replica/   # editable Figma replica delivery
-  design-doc-to-ui-visual-audit/    # React/Figma visual parity audit
+  design-doc-to-ui/                 # 主编排 skill
+  design-doc-to-ui-feishu-doc/      # 飞书/Lark 干净设计文档上传与远端复查
+  design-doc-to-ui-figma-replica/   # Figma 可编辑复刻
+  design-doc-to-ui-visual-audit/    # React/Figma 视觉一致性审计
 ```
 
-## What It Does
+## 这个 Skill 做什么
 
-`design-doc-to-ui` turns PRDs, design docs, Feishu/Lark docs, Markdown specs, wireframes, screenshots, and brand assets into:
+`design-doc-to-ui` 会把源文档拆成可审查、可实现、可验证的 UI 设计工作流：
 
-- source-backed `page_inventory` and requirements summary;
-- scripted `ui-run.json` manifests and gate validation;
-- custom style exploration with SubAgent-generated visual samples;
-- one imagegen-generated and reviewed UI image per required page;
-- per-page SubAgent review records;
-- a structured design document in the request language, including design thinking, page linkage, and generated page images;
-- a runnable local React frontend project that starts from a main-agent scaffold, uses page-level SubAgents for detailed page implementation, visually recreates the approved AI page images, and implements verified interactions;
-- optional rich Feishu/Lark document delivery when requested;
-- optional editable Figma replica delivery when requested, using page-level frame workers plus global prototype-link validation.
+- 读取源文档、图片、表格、飞书内容和页面线索；
+- 生成 `app_requirements_summary`、`page_inventory` 和 `ui-run.json`；
+- 先做风格探索，等待用户确认；
+- 再做交互设计、页面 brief、路由和状态模型，等待用户确认；
+- 使用页面级 SubAgent 为每个 required 页面生成 imagegen UI 图；
+- 主 Agent 审查全部页面图，再等待用户确认；
+- 生成干净的结构化设计文档，等待用户确认；
+- 用户要求飞书时，只上传干净设计文档，并从远端重新 fetch 校验内容；
+- 通过设计阶段门禁后，再生成 React 原型；
+- 用户要求 Figma 时，再创建可编辑 Figma 复刻。
 
-The skill is intentionally strict: incomplete page coverage, missing SubAgent evidence, missing audits, or premature React/Figma work are blockers.
+这个 skill 的目标不是一口气交付最终产物，而是把长任务拆成可以中途修正的阶段。
 
-## Companion Skills
+## 重要原则
 
-The main skill does not silently downgrade companion work:
+### 1. 飞书只放干净设计文档
 
-- `design-doc-to-ui-visual-audit` is required for React visual parity and any Figma parity check. Every required page must score at least `0.80`.
-- `design-doc-to-ui-feishu-doc` is required when Feishu/Lark delivery is requested. It requires rich document structure, design narrative, diagrams, tables, callouts, and `qa/feishu-doc-audit.json`.
-- `design-doc-to-ui-figma-replica` is required when Figma delivery is requested. It uses approved AI images plus React screenshots as references and must produce editable frames, not full-screen pasted screenshots.
+飞书文档必须是产品/交互/视觉设计文档，不是交付报告。禁止上传：
 
-If a required companion skill is missing or unreadable, that delivery stage is blocked.
+- 交付结论、交付索引、最终验收；
+- 审计结果、audit matrix、page evidence matrix；
+- worker 证据、SubAgent 状态、`qa/` 路径；
+- React/Figma/Feishu 验证结果；
+- run command、prototype 路径、本地文件路径；
+- visual parity 分数、上传校验细节。
 
-## Key Guarantees
+这些交付材料只保存在本地 `qa/` 或单独的本地交付索引中，例如 `qa/delivery-index.md`、`qa/final-delivery-audit.json`。
 
-- Every required source page must have its own page brief.
-- Every required page image must be generated and reviewed by a page-level SubAgent.
-- At most 6 SubAgents may be active at the same time; larger runs are batched.
-- Explicit style expectations in the source document, such as named style types, benchmark apps, brand adjectives, or visual do/don't rules, must be extracted and weighted above catalog defaults during style sampling.
-- React and Figma work starts only after design images, main audit, and structured design document are complete.
-- React output is a component-level Vite project, not an image viewer. The main agent must first create the app shell, route registry, style system, page slots, and worker ownership map.
-- React page workers must produce `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json` before registration in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.
-- React demo usability is gated by `prototype/qa/react-usability-audit.json`: every page must be scrollable when content exceeds the viewport, bottom content must be reachable, and a right-side page switcher must navigate to every required route without affecting visual parity screenshots.
-- Figma output must start from `qa/figma-scaffold-audit.json`, register page workers in `qa/figma-page-worker-registry.json`, and pass `qa/figma-prototype-link-plan.json` plus `qa/figma-integration-audit.json`. Each Figma page worker must also produce `visual-decomposition.json`, `figma-layer-inventory.json`, and `figma-visual-replica-audit.json`.
-- Redo/revision work must write `qa/revision-plan.json`, start the expected SubAgents for affected page images, React pages, Figma pages, or Feishu delivery artifacts, and register them in `qa/revision-subagent-registry.json`; direct main-thread implementation of affected revision work is a blocker.
-- React and Figma visual parity are judged per page. Average score cannot hide a failed page.
-- Final docs, React metadata, and optional Feishu/Figma outputs follow the user's request language.
+### 2. 设计文档必须像设计文档
 
-## Install
+结构化设计文档必须包含：
 
-Install all four skill folders. In Codex, ask the built-in installer for each path:
+- 产品定位、目标用户、核心问题和设计主张；
+- 来源依据、需求追踪、假设边界；
+- 用户故事、核心场景、验收标准；
+- 信息架构、页面地图、主任务流和恢复路径；
+- 设计决策、取舍、风险；
+- 视觉系统、设计 token、组件和模式矩阵；
+- 交互、状态、异常、内容和数据模型；
+- 每个页面的详细规格、可见文案、状态覆盖和设计验收标准；
+- 可访问性、响应式、内容和本地化说明。
+
+如果文档主要是截图目录、页面清单、交付链接、审计表或 worker 记录，门禁会失败。
+
+### 3. 阶段必须让用户确认
+
+长任务必须分阶段停止并等待用户确认：
+
+1. 风格方向确认；
+2. 交互设计和页面 brief 确认；
+3. AI 页面设计图确认；
+4. 本地结构化设计文档确认；
+5. 飞书远端文档确认，仅在用户要求飞书时；
+6. React/Figma 生成和最终审计。
+
+## 安装
+
+需要安装 4 个 skill。推荐在 Codex 中使用 `skill-installer`：
 
 ```text
 $skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/tree/main/skills/design-doc-to-ui
@@ -66,22 +82,7 @@ $skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/t
 $skill-installer install https://github.com/KilimiaoSix/design-doc-to-ui-skill/tree/main/skills/design-doc-to-ui-visual-audit
 ```
 
-Or run the installer script directly:
-
-```bash
-for skill in \
-  design-doc-to-ui \
-  design-doc-to-ui-feishu-doc \
-  design-doc-to-ui-figma-replica \
-  design-doc-to-ui-visual-audit
-do
-  python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-    --repo KilimiaoSix/design-doc-to-ui-skill \
-    --path "skills/$skill"
-done
-```
-
-Windows PowerShell:
+也可以在 Windows PowerShell 中运行安装脚本：
 
 ```powershell
 $skills = @(
@@ -90,6 +91,7 @@ $skills = @(
   "design-doc-to-ui-figma-replica",
   "design-doc-to-ui-visual-audit"
 )
+
 foreach ($skill in $skills) {
   python "$env:USERPROFILE\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py" `
     --repo KilimiaoSix/design-doc-to-ui-skill `
@@ -97,11 +99,11 @@ foreach ($skill in $skills) {
 }
 ```
 
-Restart Codex after installation so skill metadata reloads.
+安装完成后，重启 Codex，让 skill 元数据重新加载。
 
-## Update Existing Install
+## 更新已有安装
 
-The installer aborts when a target skill folder already exists. Remove or back up all four folders first, then reinstall:
+如果本机已经安装过旧版本，先删除旧目录再重新安装：
 
 ```powershell
 $skills = @(
@@ -110,58 +112,126 @@ $skills = @(
   "design-doc-to-ui-figma-replica",
   "design-doc-to-ui-visual-audit"
 )
+
 foreach ($skill in $skills) {
   Remove-Item -Recurse -Force "$env:USERPROFILE\.codex\skills\$skill"
 }
 ```
 
-Then run the install commands above and restart Codex.
+然后重新执行安装命令并重启 Codex。
 
-## Usage
+## 如何开始
 
-Ask Codex to use the main skill with a source document:
+给 Codex 一个源文档，并明确使用主 skill：
 
 ```text
-Use $design-doc-to-ui to convert this PRD into a reviewed mobile app UI package with a structured design document and runnable React prototype.
+请使用 $design-doc-to-ui，把这个产品需求文档转换成完整的移动端 UI 设计包。先做风格设计，等我确认后再做交互设计和页面图，最后生成干净的设计文档和 React 原型。
 ```
 
-The main flow:
+如果源文档是飞书链接：
 
-1. Ingest source document and assets.
-2. Derive complete `page_inventory` and initialize `ui-run.json`.
-3. Explore custom visual directions through SubAgents.
-4. Generate and review every required page image with one page-level SubAgent each.
-5. Register worker results in the manifest.
-6. Write a structured design document with design thinking, page linkage, and page images.
-7. Run the design-completion gate.
-8. Build the React scaffold, register page-level React workers, and run global navigation audit.
-9. Run visual parity audit and repair until every page reaches `0.80`.
-10. Upload rich Feishu/Lark docs only when requested.
-11. Create or update Figma replica only when requested.
-12. Run final delivery validation.
+```text
+请使用 $design-doc-to-ui，读取这个飞书产品文档并生成 UI 设计包。输出语言使用中文。需要飞书设计文档，但飞书里只放干净设计文档，交付审计材料保留在本地。
+```
 
-## Scripted Gates
+如果还需要 Figma：
 
-The main skill includes deterministic helper scripts under `skills/design-doc-to-ui/scripts/`:
+```text
+请使用 $design-doc-to-ui，从这份 PRD 生成 UI 设计包、React 原型，并在设计文档确认后创建可编辑 Figma 复刻。
+```
+
+## 标准流程
+
+主流程如下：
+
+1. 读取源文档和素材。
+2. 提取页面清单、源语言、输出语言和需求摘要。
+3. 初始化 `ui-run.json`。
+4. 进行风格探索，生成 2-3 个风格方向和样例，等待用户确认。
+5. 为每个 required 页面写 page brief，并生成中间交互设计文件，等待用户确认。
+6. 每个 required 页面启动一个页面级 SubAgent 生成 UI 图。
+7. 主 Agent 审查页面图，必要时返工，再等待用户确认。
+8. 生成干净结构化设计文档，并写 `qa/structured-design-doc-audit.json`。
+9. 用户确认设计文档后，如果要求飞书，则上传干净飞书文档。
+10. 上传飞书后，必须重新 fetch 远端链接，校验内容已更新、无乱码、无交付/审计材料泄漏。
+11. 设计阶段门禁通过后，生成 React 原型。
+12. React 通过交互和视觉审计后，按需生成 Figma 可编辑复刻。
+13. 所有交付审计结果保存在本地 `qa/`。
+
+## 主要输出
+
+典型运行目录会包含：
+
+```text
+ui-run.json
+app-requirements-summary.json
+page-briefs/
+design-images/
+qa/
+  structured-design-doc.md
+  structured-design-doc-audit.json
+  stage-approval-style.json
+  stage-approval-interaction-design.json
+  stage-approval-ai-design-images.json
+  stage-approval-design-doc.json
+  feishu-doc-audit.json
+  feishu-doc-content-audit.json
+  delivery-index.md
+prototype/
+  package.json
+  src/
+```
+
+其中 `qa/structured-design-doc.md` 是干净设计文档。其它审计、链接、运行命令和交付结果保存在本地 `qa/`，不写入飞书设计文档。
+
+## 脚本化门禁
+
+主 skill 提供一组确定性脚本，用来避免漏页、伪完成和提前进入实现阶段：
 
 ```bash
-python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-dir out/minihire --requested-output-language zh-CN
-python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/minihire
-python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/minihire --page-id home
-python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/minihire --require-all
-python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
-python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
-python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --visual-decomposition prototype/qa/react-page-workers/home/visual-decomposition.json --dom-inventory prototype/qa/react-page-workers/home/dom-element-inventory.json --visual-replica-audit prototype/qa/react-page-workers/home/visual-replica-audit.json --review prototype/qa/react-page-workers/home/review.md
-python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --visual-decomposition qa/figma-page-workers/home/visual-decomposition.json --layer-inventory qa/figma-page-workers/home/figma-layer-inventory.json --visual-replica-audit qa/figma-page-workers/home/figma-visual-replica-audit.json --review qa/figma-page-workers/home/review.md
-python skills/design-doc-to-ui/scripts/record_revision_subagent_result.py --run-dir out/minihire --revision-id rev-002 --scope react-page --page-id home --channel react --subagent-id <spawn_agent_id> --worker-result prototype/qa/react-page-workers/home/worker-result.json --review prototype/qa/react-page-workers/home/review.md
-python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
+python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-dir out/app --requested-output-language zh-CN
+python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/app
+python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/app --page-id home
+python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/app --require-all
+python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/app --phase design-completion
+python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/app --template react --copy-template
+python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/app --phase delivery
 ```
 
-`page_inventory` remains dynamic and source-derived, but becomes the single source of truth for page briefs, worker jobs, approved images, docs, React routes, Feishu/Figma eligibility, and final delivery gates.
+`validate_design_run.py` 会检查：
 
-## Validation
+- required 页面是否都有 brief、worker result、review、prompt history 和 final image；
+- 风格、交互设计、页面图、设计文档是否有用户确认；
+- 结构化设计文档是否是干净设计文档；
+- 飞书远端内容是否真正更新成功；
+- 飞书远端内容是否无乱码、无 stale 内容、无交付/审计材料泄漏；
+- React/Figma 是否满足对应审计和视觉一致性门槛。
 
-Validate each skill folder:
+## Companion Skill 说明
+
+### design-doc-to-ui-feishu-doc
+
+只负责把已批准的干净设计文档上传为飞书/Lark 富文档，并重新 fetch 远端链接做内容复查。它会写本地：
+
+```text
+qa/feishu-doc-audit.json
+qa/feishu-doc-content-audit.json
+qa/stage-approval-feishu-doc.json
+```
+
+飞书文档本身不包含这些审计材料。
+
+### design-doc-to-ui-visual-audit
+
+负责 React/Figma 与已批准 AI 页面图的视觉一致性审计。每页都要达到 `0.80`，不能用平均分掩盖单页失败。
+
+### design-doc-to-ui-figma-replica
+
+负责创建或更新可编辑 Figma 复刻。Figma 不能用整屏截图冒充实现，需要可编辑图层、组件、样式和原型连线。
+
+## 校验 Skill
+
+可以用 Codex 内置的 skill 校验脚本检查结构：
 
 ```bash
 python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui
@@ -170,17 +240,20 @@ python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/de
 python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/design-doc-to-ui-visual-audit
 ```
 
-Representative regression checks:
+Windows PowerShell：
 
-- MiniHire fixture extracts 7 required pages.
-- `ui_job_status.py --batch-size 12` caps the next worker batch at 6.
-- `validate_design_run.py --phase design-completion` returns `react_allowed=false` before design artifacts and docs exist.
-- With mock worker artifacts, locked style contract, main audit, and structured design doc, the design-completion gate passes.
-- `build_prototype_data.py --template react --copy-template` creates a runnable React project with all required routes.
-- Missing React scaffold audit, React page visual decomposition, React DOM inventory, React page visual replica audit, React page worker registry, React navigation audit, React usability audit, Figma scaffold audit, Figma page visual decomposition, Figma layer inventory, Figma visual replica audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, revision SubAgent registry when a revision plan exists, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
+```powershell
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" skills/design-doc-to-ui
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" skills/design-doc-to-ui-feishu-doc
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" skills/design-doc-to-ui-figma-replica
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" skills/design-doc-to-ui-visual-audit
+```
 
-## Notes
+## 仓库说明
 
-- Keep repository-level docs at the repo root.
-- Do not add README/changelog files inside individual skill folders; skill folders should contain executable instructions, references, scripts, and assets only.
-- Feishu/Figma delivery is optional, but once requested it is gated by the corresponding companion skill and audit JSON.
+- 仓库根目录的 `README.md` 是中文主文档。
+- 单个 skill 目录内不要放 README、CHANGELOG 等额外说明文件。
+- Skill 目录只保留 Codex 执行能力所需的 `SKILL.md`、`agents/`、`references/`、`scripts/` 和 `assets/`。
+- 飞书/Figma 是可选输出；一旦用户要求，就必须通过对应 companion skill 和本地审计 JSON。
+
+仓库地址：[https://github.com/KilimiaoSix/design-doc-to-ui-skill](https://github.com/KilimiaoSix/design-doc-to-ui-skill)

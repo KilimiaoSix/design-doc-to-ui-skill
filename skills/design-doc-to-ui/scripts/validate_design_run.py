@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -144,8 +145,8 @@ def validate_structured_doc_audit(run_dir: Path, manifest: dict[str, Any], block
     except (TypeError, ValueError):
         add(blockers, "STRUCTURED_DESIGN_DOC_SCORE_MISSING", "Structured design document audit quality_score is missing or invalid.")
         quality_score = 0.0
-    if quality_score < 0.85:
-        add(blockers, "STRUCTURED_DESIGN_DOC_SCORE_LOW", f"Structured design document quality_score {quality_score:.2f} is below 0.85.")
+    if quality_score < 0.90:
+        add(blockers, "STRUCTURED_DESIGN_DOC_SCORE_LOW", f"Structured design document quality_score {quality_score:.2f} is below 0.90.")
 
     required_count = len(required_pages(manifest))
     documented_count = data.get("documented_page_spec_count")
@@ -166,8 +167,18 @@ def validate_structured_doc_audit(run_dir: Path, manifest: dict[str, Any], block
         "interaction_state_matrix_present",
         "component_token_system_present",
         "accessibility_review_present",
-        "handoff_acceptance_criteria_present",
+        "design_acceptance_criteria_present",
         "revision_history_present",
+        "not_delivery_status_report",
+        "design_document_body_first",
+        "clean_design_document_only",
+        "no_delivery_or_audit_appendix",
+        "no_delivery_index_or_repair_heading",
+        "no_placeholder_or_garbled_text",
+        "concrete_design_decisions_present",
+        "per_page_visible_copy_complete",
+        "data_and_content_model_present",
+        "review_ready_for_product_design_engineering",
     ]
     for key in required_flags:
         if data.get(key) is not True:
@@ -177,6 +188,23 @@ def validate_structured_doc_audit(run_dir: Path, manifest: dict[str, Any], block
         add(blockers, "STRUCTURED_DESIGN_DOC_SCREENSHOT_CATALOG_ONLY", "Structured design document is effectively a screenshot/page catalog.")
     if data.get("blockers"):
         add(blockers, "STRUCTURED_DESIGN_DOC_AUDIT_BLOCKERS", "Structured design document audit contains blockers.")
+
+    artifacts = manifest.get("artifacts") or {}
+    doc_path = resolve_run_path(run_dir, artifacts.get("structured_design_doc"))
+    if doc_path and doc_path.exists():
+        text = doc_path.read_text(encoding="utf-8", errors="replace")
+        signals = text_quality_signals(text)
+        if signals["question_run_count"] or signals["replacement_character_count"] or signals["common_mojibake_count"]:
+            add(blockers, "STRUCTURED_DESIGN_DOC_GARBLED_TEXT", "Structured design document contains mojibake, replacement characters, or question-mark replacement runs.")
+        if "[object Object]" in text:
+            add(blockers, "STRUCTURED_DESIGN_DOC_PLACEHOLDER_OBJECT", "Structured design document contains serialized placeholder text such as [object Object].")
+        delivery_shape_hits = delivery_report_shape_hits(text)
+        if delivery_shape_hits:
+            add(blockers, "STRUCTURED_DESIGN_DOC_DELIVERY_MATERIAL_PRESENT", "Structured design document contains delivery/audit/report material: " + ", ".join(delivery_shape_hits[:10]))
+        required_ids = [str(page.get("page_id")) for page in required_pages(manifest)]
+        missing_ids = [page_id for page_id in required_ids if page_id and page_id not in text]
+        if missing_ids:
+            add(blockers, "STRUCTURED_DESIGN_DOC_PAGE_IDS_MISSING", "Structured design document is missing required page ids: " + ", ".join(missing_ids[:20]))
 
 
 def companion_loaded(manifest: dict[str, Any], key: str) -> bool:
@@ -201,6 +229,81 @@ def score_value(item: dict[str, Any]) -> float | None:
     if number > 1:
         number = number / 100
     return number
+
+
+def text_quality_signals(text: str) -> dict[str, int]:
+    return {
+        "question_run_count": len(re.findall(r"\?{3,}", text)),
+        "replacement_character_count": text.count("\ufffd"),
+        "common_mojibake_count": sum(text.count(marker) for marker in ["锟斤拷", "ï¿½", "Ã", "Â"]),
+    }
+
+
+def delivery_report_shape_hits(text: str) -> list[str]:
+    patterns = [
+        r"^\s*#{1,4}\s*Encoding repair\b",
+        r"^\s*#{1,4}\s*Delivery index\b",
+        r"^\s*#{1,4}\s*Delivery evidence\b",
+        r"^\s*#{1,4}\s*Page evidence matrix\b",
+        r"^\s*#{1,4}\s*Audit matrix\b",
+        r"^\s*#{1,4}\s*Structured design document\b",
+        r"^\s*#{1,4}\s*Page images and acceptance\b",
+        r"^\s*#{1,4}\s*Final acceptance\b",
+        r"^\s*#{1,4}\s*(交付结论|交付索引|交付证据|审计结果|审计矩阵|最终验收)\b",
+        r"\bReact/Figma/Feishu\s+(delivery|verification|acceptance)\b",
+        r"\bvisual parity\b",
+        r"\bvisual[-_ ]?similarity\b",
+        r"\bworker evidence\b",
+        r"\brun command\b",
+        r"\bqa[/\\][\w.-]+",
+        r"\bprototype[/\\]",
+        r"[A-Za-z]:\\Users\\",
+    ]
+    hits: list[str] = []
+    for pattern in patterns:
+        if re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE):
+            hits.append(pattern)
+    return hits
+
+
+def validate_text_artifact_quality(path: Path, blockers: list[dict[str, Any]], code: str, message: str) -> None:
+    if not path.exists():
+        add(blockers, code, f"Referenced text artifact is missing: {path}")
+        return
+    text = path.read_text(encoding="utf-8", errors="replace")
+    signals = text_quality_signals(text)
+    if signals["question_run_count"] or signals["replacement_character_count"] or signals["common_mojibake_count"]:
+        add(blockers, code, f"{message} Signals: {signals}.")
+
+
+def validate_stage_approval(run_dir: Path, manifest: dict[str, Any], key: str, label: str, blockers: list[dict[str, Any]]) -> None:
+    data, error = load_artifact_json(run_dir, manifest, key)
+    if error:
+        add(blockers, "STAGE_APPROVAL_MISSING", f"Missing required user approval for {label}: {error}")
+        return
+    if data.get("passed") is not True:
+        add(blockers, "STAGE_APPROVAL_NOT_PASSED", f"Stage approval for {label} must include passed=true.")
+    if data.get("user_approved") is not True:
+        add(blockers, "STAGE_USER_APPROVAL_MISSING", f"Stage approval for {label} must include user_approved=true.")
+    approved_by = str(data.get("approved_by") or "").strip().lower()
+    if not approved_by or approved_by in {"agent", "assistant", "codex"}:
+        add(blockers, "STAGE_APPROVAL_BY_AGENT", f"Stage approval for {label} must record a real user approval, not an agent self-approval.")
+    if not data.get("approved_at"):
+        add(blockers, "STAGE_APPROVAL_TIME_MISSING", f"Stage approval for {label} must include approved_at.")
+    reviewed = data.get("reviewed_artifacts") or data.get("approved_artifacts") or []
+    if not isinstance(reviewed, list) or not reviewed:
+        add(blockers, "STAGE_APPROVAL_ARTIFACTS_MISSING", f"Stage approval for {label} must list the reviewed artifacts.")
+
+
+def validate_required_stage_approvals(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    required = [
+        ("stage_approval_style", "style direction and visual principles"),
+        ("stage_approval_interaction_design", "interaction design and page briefs"),
+        ("stage_approval_ai_design_images", "AI-generated page design images after AI/main-agent audit"),
+        ("stage_approval_design_doc", "structured design document before React/Figma"),
+    ]
+    for key, label in required:
+        validate_stage_approval(run_dir, manifest, key, label, blockers)
 
 
 def validate_max_active_subagents(data: dict[str, Any], blockers: list[dict[str, Any]], prefix: str) -> None:
@@ -772,6 +875,98 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
                 add(blockers, "REACT_CROSS_PAGE_FLOW_NOT_PASSED", "React cross-page flow did not pass.")
 
 
+def validate_feishu_content_audit(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    data, error = load_artifact_json(run_dir, manifest, "feishu_doc_content_audit")
+    if error:
+        add(blockers, "FEISHU_CONTENT_AUDIT_MISSING", "Feishu delivery must fetch the published link and write qa/feishu-doc-content-audit.json.")
+        return
+    if data.get("passed") is not True:
+        add(blockers, "FEISHU_CONTENT_AUDIT_NOT_PASSED", "feishu-doc-content-audit.json is missing passed=true.")
+
+    required_true_fields = [
+        "remote_fetch_verified",
+        "remote_content_updated",
+        "remote_content_matches_expected_sections",
+        "remote_page_inventory_covered",
+        "required_sections_present",
+        "source_traceability_present",
+        "user_story_acceptance_criteria_present",
+        "interaction_state_matrix_present",
+        "component_token_system_present",
+        "accessibility_review_present",
+        "design_acceptance_criteria_present",
+        "page_specs_present",
+        "remote_content_is_clean_design_doc",
+        "no_delivery_or_audit_material_uploaded",
+        "no_delivery_index_or_repair_heading",
+        "no_mojibake_detected",
+    ]
+    for key in required_true_fields:
+        if data.get(key) is not True:
+            add(blockers, "FEISHU_CONTENT_FIELD_FAILED", f"Feishu remote content audit missing or failed field: {key}.")
+
+    if data.get("mojibake_detected") is True:
+        add(blockers, "FEISHU_REMOTE_CONTENT_MOJIBAKE", "Feishu remote content audit reports mojibake.")
+    if data.get("stale_content_detected") is True:
+        add(blockers, "FEISHU_REMOTE_CONTENT_STALE", "Feishu remote content audit reports stale or not-updated remote content.")
+    if data.get("missing_required_sections"):
+        add(blockers, "FEISHU_REMOTE_SECTIONS_MISSING", "Feishu remote content is missing required sections.")
+    if data.get("missing_page_ids"):
+        add(blockers, "FEISHU_REMOTE_PAGE_IDS_MISSING", "Feishu remote content is missing required page ids.")
+    if data.get("blockers"):
+        add(blockers, "FEISHU_CONTENT_AUDIT_BLOCKERS", "Feishu remote content audit contains blockers.")
+
+    question_runs = data.get("question_mark_replacement_runs")
+    if question_runs is not None:
+        try:
+            if int(question_runs) > 0:
+                add(blockers, "FEISHU_REMOTE_QUESTION_REPLACEMENTS", "Feishu remote content contains question-mark replacement runs.")
+        except (TypeError, ValueError):
+            add(blockers, "FEISHU_REMOTE_QUESTION_REPLACEMENTS_INVALID", "question_mark_replacement_runs must be numeric.")
+
+    required_count = len(required_pages(manifest))
+    try:
+        remote_page_count = int(data.get("remote_page_spec_count"))
+    except (TypeError, ValueError):
+        add(blockers, "FEISHU_REMOTE_PAGE_SPEC_COUNT_MISSING", "Feishu remote content audit must include remote_page_spec_count.")
+        remote_page_count = 0
+    if remote_page_count < required_count:
+        add(blockers, "FEISHU_REMOTE_PAGE_SPEC_COUNT_LOW", "Feishu remote content includes fewer page specs than required pages.")
+
+    try:
+        image_count = int(data.get("remote_page_image_count"))
+    except (TypeError, ValueError):
+        image_count = 0
+    if image_count < required_count:
+        add(blockers, "FEISHU_REMOTE_PAGE_IMAGE_COUNT_LOW", "Feishu remote content includes fewer page images than required pages.")
+
+    checked_fetch_paths: set[Path] = set()
+    for key in ["remote_fetch_path", "remote_content_path", "fetched_document_path", "fetch_artifact_path"]:
+        value = data.get(key)
+        if not value:
+            continue
+        path = resolve_run_path(run_dir, str(value))
+        if path:
+            try:
+                resolved_path = path.resolve()
+            except Exception:
+                resolved_path = path
+            if resolved_path in checked_fetch_paths:
+                continue
+            checked_fetch_paths.add(resolved_path)
+            validate_text_artifact_quality(
+                path,
+                blockers,
+                "FEISHU_REMOTE_FETCH_GARBLED_TEXT",
+                "Fetched Feishu link content contains mojibake or question-mark replacement runs.",
+            )
+            if path.exists():
+                text = path.read_text(encoding="utf-8", errors="replace")
+                delivery_shape_hits = delivery_report_shape_hits(text)
+                if delivery_shape_hits:
+                    add(blockers, "FEISHU_REMOTE_DELIVERY_MATERIAL_PRESENT", "Fetched Feishu link content contains delivery/audit/report material: " + ", ".join(delivery_shape_hits[:10]))
+
+
 def validate_feishu_delivery(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
     if not companion_loaded(manifest, "feishu_doc"):
         add(blockers, "FEISHU_COMPANION_NOT_LOADED", "design-doc-to-ui-feishu-doc must be loaded before Feishu delivery.")
@@ -792,7 +987,10 @@ def validate_feishu_delivery(run_dir: Path, manifest: dict[str, Any], blockers: 
         "interaction_state_matrix_present",
         "component_token_system_present",
         "accessibility_review_present",
-        "handoff_acceptance_criteria_present",
+        "design_acceptance_criteria_present",
+        "clean_design_document_only",
+        "no_delivery_or_audit_material_uploaded",
+        "no_delivery_index_or_repair_heading",
     ]
     for key in required_flags:
         if data.get(key) is not True:
@@ -803,6 +1001,8 @@ def validate_feishu_delivery(run_dir: Path, manifest: dict[str, Any], blockers: 
         add(blockers, "FEISHU_PAGE_LINKAGE_MISSING", "Feishu document must explain page linkage and task flow.")
     if data.get("blockers"):
         add(blockers, "FEISHU_DOC_AUDIT_BLOCKERS", "Feishu document audit contains blockers.")
+    validate_feishu_content_audit(run_dir, manifest, blockers)
+    validate_stage_approval(run_dir, manifest, "stage_approval_feishu_doc", "published Feishu document link", blockers)
 
 
 def validate_figma_scaffold(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
@@ -1288,6 +1488,12 @@ def validate(run_dir: Path, phase: str) -> dict[str, Any]:
         add(blockers, "STRUCTURED_DESIGN_DOC_MISSING", "Structured design document is missing.")
     if not structured_doc_quality_passed(run_dir, manifest):
         validate_structured_doc_audit(run_dir, manifest, blockers)
+
+    if phase in {"design-completion", "prototype", "delivery", "final"}:
+        validate_required_stage_approvals(run_dir, manifest, blockers)
+        channels = manifest.get("delivery_channels") or {}
+        if phase != "delivery" and (channels.get("feishu") or {}).get("requested"):
+            validate_feishu_delivery(run_dir, manifest, blockers)
 
     validate_revision_gate(run_dir, manifest, blockers)
 

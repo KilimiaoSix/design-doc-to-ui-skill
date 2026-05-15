@@ -1,6 +1,6 @@
 ---
 name: design-doc-to-ui
-description: "Convert PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into complete UI design packages with source-backed page inventory, imagegen UI images, structured design docs with design thinking, dedicated SubAgent-built runnable React prototypes, optional Feishu rich documents, optional Figma replicas, user-feedback revisions, and 80% visual parity gates. Use when Codex needs page coverage, SubAgent image generation/review, user-requested design changes, formal React demo implementation and interaction verification, React visual parity, Feishu design docs, or Figma output. Requires direct SubAgent delegation and mandatory companion skills for Feishu, Figma, and visual audit stages."
+description: "Convert PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into checkpointed UI design packages with source-backed page inventory, style/interaction design approvals, imagegen UI images, review-grade structured design docs, optional Feishu rich documents with remote-link content verification, dedicated SubAgent-built runnable React prototypes, optional Figma replicas, user-feedback revisions, and 80% visual parity gates. Use when Codex needs page coverage, SubAgent image generation/review, user-approved stage gates, formal React demo implementation and interaction verification, React visual parity, Feishu design docs, or Figma output. Requires direct SubAgent delegation, mandatory user approval checkpoints, and companion skills for Feishu, Figma, and visual audit stages."
 ---
 
 # Design Doc To UI
@@ -15,32 +15,49 @@ Optional package outputs:
 - upload the design document and image attachments to Feishu/Lark only when the user asks for Feishu output;
 - create/update Figma only when the user provides a Figma link/file or explicitly asks for Figma output.
 
+## Stage Checkpoint Contract
+
+This skill is a long-running workflow. Do not run it as an uninterrupted one-shot delivery.
+
+Before advancing to the next major stage, present the current artifact paths, summarize the decision points, and wait for explicit user approval or revision feedback. Do not mark a stage approved based on agent judgment alone.
+
+Required checkpoint artifacts:
+
+- `qa/stage-approval-style.json`: after style principles, style directions, and style samples are ready.
+- `qa/stage-approval-interaction-design.json`: after page inventory, page briefs, route map, state model, and intermediate interaction design file are ready.
+- `qa/stage-approval-ai-design-images.json`: after all imagegen page designs pass SubAgent review and main-agent audit.
+- `qa/stage-approval-design-doc.json`: after the local structured design document passes quality audit.
+- `qa/stage-approval-feishu-doc.json`: only when Feishu is requested, after the Feishu link has been fetched back, content-verified, and reviewed by the user.
+
+Each approval JSON must include `passed: true`, `user_approved: true`, a real non-agent `approved_by`, `approved_at`, and `reviewed_artifacts`. If the user requests changes, follow the User Feedback Revision Workflow and do not advance until the affected stage is regenerated and re-approved.
+
 ## Required Workflow
 
 1. Ingest the source document and assets.
 2. Produce an `app_requirements_summary` with `source_language`, `requested_output_language`, and `page_inventory`.
 3. Initialize a scripted run manifest with `scripts/prepare_ui_run.py`; `ui-run.json` becomes the single source of truth for page count, artifacts, and gates.
 4. Run the SubAgent Direct-Use Gate.
-5. Run the Style Exploration Gate before page generation.
+5. Run the Style Exploration Gate before page generation. Present style directions and samples, then stop for user approval. Write `qa/stage-approval-style.json` only after the user approves.
 6. Run the Page Coverage Gate against `ui-run.json`.
-7. Create one page brief for every required page.
+7. Create one page brief for every required page, plus an intermediate interaction design file covering routes, task flows, state/error strategy, and page linkage. Present these artifacts and stop for user approval. Write `qa/stage-approval-interaction-design.json` only after approval.
 8. Use `scripts/ui_job_status.py` to plan page worker batches of at most 6 active SubAgents.
-9. Run one page-level SubAgent for each required page to generate the UI image and complete page calibration/review.
+9. Run one page-level SubAgent for each required page to generate the UI image with the available image generation tool and complete page calibration/review.
 10. After each page worker returns, use `scripts/record_ui_worker_result.py` from the main thread to register its artifacts in `ui-run.json`.
 11. Run the Per-Page SubAgent Gate.
-12. Perform the main-agent audit across all pages.
-13. Generate a structured design document in `requested_output_language`; it must pass the Structured Design Document Quality Gate and explain source traceability, user stories, acceptance criteria, design rationale, page linkage, interaction/state matrices, component tokens, accessibility, handoff requirements, and revision history, not only list screens.
-14. Write `qa/structured-design-doc-audit.json`, then run `scripts/validate_design_run.py --phase design-completion`; React/Figma remains blocked unless this passes with `react_allowed: true`.
-15. Run the Companion Skill Gate for visual audit, then generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`.
-16. In the main thread, create the React scaffold first: app shell, route registry, shared layout, style tokens/CSS, base components, right-side page switcher, scroll container contract, page slots, and page-worker ownership map. Write passing `prototype/qa/react-scaffold-audit.json` before starting React page workers.
-17. Start one page-level React Prototype SubAgent per required page using `references/react-prototype-worker-prompt.md`, batching with at most 6 active SubAgents. Each page worker must build its assigned route inside the main-agent scaffold, follow the shared style system, self-review page-local interactions, and write page-level QA before returning.
-18. Integrate the React app in the main thread: shared shell adjustments, route targets, cross-page state, and whole-product jump logic. Run the React Prototype Worker Gate: require the scaffold audit, every page worker result, plus aggregate `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json` to pass, including `global_navigation_passed: true`. Screenshot/hotspot/image-browser demos are non-compliant.
-19. Run the React Visual Parity Gate with `design-doc-to-ui-visual-audit`: render every required route, compare screenshots to approved AI page images, and repair until every page is at least 80% similar.
-20. Optionally upload a rich Feishu/Lark design document only when requested; this stage must use `design-doc-to-ui-feishu-doc`.
-21. Optionally create/update Figma only when requested; this stage must use `design-doc-to-ui-figma-replica`, start one page-level Figma Replica SubAgent per required page with at most 6 active SubAgents, then have the main agent wire global prototype links/cross-frame jumps and pass the editable-frame, frontend-handoff, asset-reconstruction, prototype-link, and 80% per-page replica gates.
-22. Run `scripts/validate_design_run.py --phase delivery` and perform the Final Functional Audit on React plus any requested Feishu/Figma outputs.
+12. Perform the main-agent audit across all pages. Present approved AI page images and audit notes to the user, then stop for approval. Write `qa/stage-approval-ai-design-images.json` only after the user approves.
+13. Generate a clean structured product design document in `requested_output_language`; it must pass the Structured Design Document Quality Gate and explain the design problem, users, scope, source traceability, user stories, acceptance criteria, design rationale, page linkage, interaction/state matrices, component tokens, content/data model, accessibility, design acceptance, and revision history. Do not include delivery links, worker evidence, audit results, run commands, visual parity scores, or React/Figma/Feishu delivery acceptance in the design document.
+14. Write `qa/structured-design-doc-audit.json`, present the local structured design document to the user, and stop for approval. Write `qa/stage-approval-design-doc.json` only after the user approves.
+15. If Feishu/Lark delivery is requested, use `design-doc-to-ui-feishu-doc` now: create/update the rich document, fetch the published Feishu link back, verify the remote linked content was updated successfully and has no mojibake/stale content, write both `qa/feishu-doc-audit.json` and `qa/feishu-doc-content-audit.json`, then stop for user approval of the Feishu link. Write `qa/stage-approval-feishu-doc.json` only after approval.
+16. Run `scripts/validate_design_run.py --phase design-completion`; React/Figma remains blocked unless this passes with `react_allowed: true`. When Feishu is requested, this gate also requires Feishu remote content verification and user approval.
+17. Run the Companion Skill Gate for visual audit, then generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`.
+18. In the main thread, create the React scaffold first: app shell, route registry, shared layout, style tokens/CSS, base components, right-side page switcher, scroll container contract, page slots, and page-worker ownership map. Write passing `prototype/qa/react-scaffold-audit.json` before starting React page workers.
+19. Start one page-level React Prototype SubAgent per required page using `references/react-prototype-worker-prompt.md`, batching with at most 6 active SubAgents. Each page worker must build its assigned route inside the main-agent scaffold, follow the shared style system, self-review page-local interactions, and write page-level QA before returning.
+20. Integrate the React app in the main thread: shared shell adjustments, route targets, cross-page state, and whole-product jump logic. Run the React Prototype Worker Gate: require the scaffold audit, every page worker result, plus aggregate `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json` to pass, including `global_navigation_passed: true`. Screenshot/hotspot/image-browser demos are non-compliant.
+21. Run the React Visual Parity Gate with `design-doc-to-ui-visual-audit`: render every required route, compare screenshots to approved AI page images, and repair until every page is at least 80% similar.
+22. Optionally create/update Figma only when requested; this stage must use `design-doc-to-ui-figma-replica`, start one page-level Figma Replica SubAgent per required page with at most 6 active SubAgents, then have the main agent wire global prototype links/cross-frame jumps and pass the editable-frame, frontend-handoff, asset-reconstruction, prototype-link, and 80% per-page replica gates.
+23. Run `scripts/validate_design_run.py --phase delivery` and perform the Final Functional Audit on React plus any requested Feishu/Figma outputs.
 
-Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, Companion Skill Gate, React Scaffold Gate, React Page Worker Gate, Visual Parity Gate, Delivery Gate, or Final Functional Audit.
+Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, user approval checkpoints, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, Companion Skill Gate, React Scaffold Gate, React Page Worker Gate, Visual Parity Gate, Feishu remote content verification when requested, Delivery Gate, or Final Functional Audit.
 
 Do not silently reduce scope with labels such as "pilot", "core flow", "trial", or "MVP slice". A page from `page_inventory` may be deferred only when the user explicitly approves the deferral; record it as `user-approved deferred`, not approved.
 
@@ -225,6 +242,8 @@ The design phase is complete only when:
 - Every non-deferred required page has a SubAgent `worker-result.json`, `review.md`, `prompt-history.md`, and final design image.
 - Every non-deferred required page has status `approved` after main-agent audit.
 - The main-agent audit has passed across all approved design images.
+- Style direction, interaction design, AI design images, and structured design document have explicit user approval recorded in the corresponding `qa/stage-approval-*.json` files.
+- If Feishu/Lark delivery was requested, the published Feishu link has been fetched back, verified for updated content and no mojibake/stale content, and approved by the user.
 - No style-sampling, page-generation, or regeneration SubAgent is still running.
 
 If any required page is `blocked`, `infeasible`, or missing an approved final image, do not generate React/Figma by default. Generate a partial React/Figma prototype only if the user explicitly approves a partial prototype after the missing pages are listed.
@@ -235,23 +254,23 @@ After the structured design document exists, enforce this gate with:
 python scripts/validate_design_run.py --run-dir <output-run-dir> --phase design-completion
 ```
 
-Proceed to React/Figma only when the script reports `passed: true` and `react_allowed: true`. Existing manifests may also expose the backward-compatible `html_allowed` field with the same value.
+Proceed to React/Figma only when the script reports `passed: true` and `react_allowed: true`. Existing manifests may also expose the backward-compatible `html_allowed` field with the same value. Do not bypass this gate because a long-running task is already in progress.
 
 ## Structured Design Document
 
 Read `references/design-doc-output.md` and `references/design-doc-quality-gate.md`.
 
-Generate the structured design document before React/Figma implementation. Include the product summary, page inventory, user flow, visual style contract, screen specs for every required page, UI images, interaction notes, per-page review results, main-agent audit, prototype implementation requirements, and open questions. Mark React/Figma/Feishu paths as `pending` at this stage, then update the document after those outputs are created.
+Generate the structured product design document before React/Figma implementation. Include the design proposition, scope boundaries, page inventory, user flow, visual style contract, screen specs for every required page, UI images, interaction notes, prototype-relevant design constraints, content/data rules, accessibility, and open questions. Do not add pending or final React/Figma/Feishu paths to this document.
 
-The document must include a design narrative and a delivery-grade specification: design proposition, source traceability, user stories and acceptance criteria, user mindset, core tension, information architecture, page linkage, state strategy, component/token principles, accessibility/content notes, handoff acceptance criteria, and risks. A page-by-page catalog, screenshot directory, or delivery status report is non-compliant.
+The document must include a design narrative and implementation-ready design specification: design proposition, source traceability, user stories and acceptance criteria, user mindset, core tension, information architecture, page linkage, state strategy, component/token principles, content/data model, accessibility/content notes, design acceptance criteria, and risks. A page-by-page catalog, screenshot directory, audit matrix, delivery index, delivery status report, or local artifact/link appendix is non-compliant.
 
-Before React/Figma/Feishu work, audit the document against `references/design-doc-quality-gate.md` and write `qa/structured-design-doc-audit.json`. The Design Completion Gate must fail if the audit is missing, if `passed` is not true, if `quality_score < 0.85`, if any required quality pillar is false, if documented page specs do not cover all required pages, or if the document is effectively only a screenshot catalog.
+Before Feishu/React/Figma work, audit the document against `references/design-doc-quality-gate.md` and write `qa/structured-design-doc-audit.json`. The Design Completion Gate must fail if the audit is missing, if `passed` is not true, if `quality_score < 0.90`, if any required quality pillar is false, if documented page specs do not cover all required pages, if the document contains delivery/link/audit sections, if placeholder text such as `[object Object]` or mojibake appears, or if the document is effectively only a screenshot catalog.
 
 ## React Prototype
 
 Read `references/html-prototype.md` and `references/react-prototype-worker-prompt.md`.
 
-Do not begin React implementation until the Design Completion Gate has passed and the structured design document exists. Build the React prototype from the approved design images, structured design document, original requirements, page briefs, and worker reviews. Do not build React from requirements alone while design images are still pending. After React is generated and audited, update the structured design document with the React project path, run command, React worker result, interaction audit, visual parity result, and audit result.
+Do not begin React implementation until the Design Completion Gate has passed, the structured design document exists, and required user approvals are recorded. When Feishu delivery was requested, do not begin React until the Feishu link content audit and Feishu user approval also pass. Build the React prototype from the approved design images, structured design document, original requirements, page briefs, and worker reviews. Do not build React from requirements alone while design images are still pending. After React is generated and audited, record the React project path, run command, worker result, interaction audit, visual parity result, and audit result in local `qa/` or delivery artifacts, not in the design document or Feishu document.
 
 Generate or verify the React prototype data layer with:
 
@@ -297,15 +316,17 @@ If the audit fails, fix the React prototype or mark the failing area blocked bef
 
 ## Feishu/Lark Delivery
 
-Read `references/feishu-delivery.md` and `design-doc-to-ui-feishu-doc/SKILL.md` only if the user asks to upload, publish, or sync the final design package to Feishu/Lark. Do not upload to Feishu by default.
+Read `references/feishu-delivery.md` and `design-doc-to-ui-feishu-doc/SKILL.md` only if the user asks to upload, publish, or sync the design document to Feishu/Lark. Do not upload to Feishu by default.
 
-Feishu output must be a rich design document, not a plain Markdown dump. It must use suitable Feishu blocks such as callouts, grids, tables, and whiteboards/diagrams, and must produce `qa/feishu-doc-audit.json`.
+Feishu output must be a clean rich design document, not a plain Markdown dump and not a delivery package. It must use suitable Feishu blocks such as callouts, grids, tables, and whiteboards/diagrams, and must produce local `qa/feishu-doc-audit.json`. Do not upload delivery conclusions, audit results, worker evidence, React/Figma/Feishu verification, run commands, visual parity scores, or local artifact paths to Feishu.
+
+After every Feishu create/update, fetch the linked document content back through `lark-doc`/`lark-cli docs +fetch` and audit the remote content, not only the local source XML. Write local `qa/feishu-doc-content-audit.json` with evidence that the Feishu link is current, required design sections and page specs are present, page images are present, no stale content remains, no delivery/audit material was uploaded, and no mojibake/question-mark replacement runs were introduced. Feishu delivery is blocked until this remote content audit passes and the user approves the published link in `qa/stage-approval-feishu-doc.json`. If a delivery summary is useful, write it as a local file such as `qa/delivery-index.md`; never append it to the Feishu design document.
 
 ## Figma
 
 Read `references/figma-workflow.md` and `design-doc-to-ui-figma-replica/SKILL.md` only if the user provides a Figma link/file, asks to sync to Figma, or asks to create a Figma prototype. Do not assume Figma is required.
 
-Do not begin Figma implementation until the Design Completion Gate has passed, the structured design document exists, and the React prototype has passed visual parity and interaction audit. Figma output must be based on the approved design images, structured design document, and React prototype. It must basically replicate the approved image-generated screen set as fully editable, frontend-handoff-ready Figma frames, not reinterpret the product from requirements, use mismatched generic layouts, or paste full-page screenshots as implementation. The main agent first writes `qa/figma-scaffold-audit.json`, then uses one page-level Figma Replica SubAgent per required page, batched with at most 6 active SubAgents; after each page worker returns, the main thread records it with `scripts/record_figma_page_worker_result.py` into `qa/figma-page-worker-registry.json`, then wires global prototype links and cross-frame jumps. Each Figma page worker must write passing `visual-decomposition.json`, `figma-layer-inventory.json`, and `figma-visual-replica-audit.json` so every visible AI-image element is mapped to an editable or replaceable Figma layer/component and distinctive layouts are not simplified. Each required page must have a Figma frame with `visual_similarity_score >= 0.80` in `qa/figma-replica-audit.json`, `editable_element_coverage >= 0.95`, passing icon/asset reconstruction checks, and primary prototype links. Missing required frames, flattened major UI regions, unmapped required visual elements, non-editable icons/assets, full-screen pasted screenshots as implementation, missing prototype links for primary flows, failed global prototype links, missing page-level visual decomposition/layer inventory/replica audit, or material mismatch against the approved AI page image are blocking failures. Missing assets must follow the crop-reference -> image-gen isolated asset -> background cleanup -> individual Figma layer/component -> asset manifest flow. After Figma output is generated, update the structured design document with the Figma link and audit notes.
+Do not begin Figma implementation until the Design Completion Gate has passed, the structured design document exists, required user approvals are recorded, and the React prototype has passed visual parity and interaction audit. When Feishu delivery was requested, the Feishu link content audit and Feishu user approval must also pass before Figma begins. Figma output must be based on the approved design images, structured design document, and React prototype. It must basically replicate the approved image-generated screen set as fully editable, frontend-handoff-ready Figma frames, not reinterpret the product from requirements, use mismatched generic layouts, or paste full-page screenshots as implementation. The main agent first writes `qa/figma-scaffold-audit.json`, then uses one page-level Figma Replica SubAgent per required page, batched with at most 6 active SubAgents; after each page worker returns, the main thread records it with `scripts/record_figma_page_worker_result.py` into `qa/figma-page-worker-registry.json`, then wires global prototype links and cross-frame jumps. Each Figma page worker must write passing `visual-decomposition.json`, `figma-layer-inventory.json`, and `figma-visual-replica-audit.json` so every visible AI-image element is mapped to an editable or replaceable Figma layer/component and distinctive layouts are not simplified. Each required page must have a Figma frame with `visual_similarity_score >= 0.80` in `qa/figma-replica-audit.json`, `editable_element_coverage >= 0.95`, passing icon/asset reconstruction checks, and primary prototype links. Missing required frames, flattened major UI regions, unmapped required visual elements, non-editable icons/assets, full-screen pasted screenshots as implementation, missing prototype links for primary flows, failed global prototype links, missing page-level visual decomposition/layer inventory/replica audit, or material mismatch against the approved AI page image are blocking failures. Missing assets must follow the crop-reference -> image-gen isolated asset -> image cleanup -> individual Figma layer/component -> asset manifest flow. After Figma output is generated, record the Figma link and audit notes in local delivery artifacts, not in the structured design document or Feishu document.
 
 ## Output Checklist
 
@@ -319,6 +340,7 @@ Before finishing, report:
 - Script gate results: `ui-run.json`, latest validation report, and prototype-data report.
 - Companion Skill Gate result and companion-skill report.
 - Structured design document quality audit path, quality score, and blockers/warnings.
+- Stage approval artifact paths for style, interaction design, AI design images, structured design document, and Feishu document when requested.
 - User feedback revisions applied, affected pages/channels, revision plan/log path, and rerun gates when applicable.
 - Pages generated and each page's review status.
 - Design Completion Gate result.
@@ -326,6 +348,6 @@ Before finishing, report:
 - React prototype folder path, run command, visual parity score summary, and Final Functional Audit result.
 - React scaffold audit path, shared style system status, page switcher status, scroll container status, and worker ownership map status.
 - React page SubAgent batch result, aggregate interaction-flow audit path, usability audit path, global navigation result, scroll result, and any blocked/infeasible interactions.
-- Feishu/Lark document link and rich document audit, or "not uploaded because not requested".
+- Feishu/Lark document link, rich document audit, remote content re-fetch audit, and user approval status, or "not uploaded because not requested".
 - Figma link, Figma page SubAgent batch result, editable-frame/front-end handoff audit, asset manifest, global prototype-link result, and 80% replica audit, or "not generated because not requested/provided".
 - Known residual risks, blocked pages, infeasible pages, or user-approved deferred pages.

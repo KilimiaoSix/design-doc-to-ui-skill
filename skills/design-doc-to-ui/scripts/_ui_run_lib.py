@@ -294,7 +294,41 @@ def structured_doc_quality_passed(run_dir: Path, manifest: dict[str, Any]) -> bo
         quality_score = float(data.get("quality_score"))
     except (TypeError, ValueError):
         return False
-    return quality_score >= 0.85 and not data.get("blockers")
+    required_flags = [
+        "source_traceability_present",
+        "design_rationale_present",
+        "user_story_acceptance_criteria_present",
+        "journey_and_ia_present",
+        "page_specs_complete",
+        "interaction_state_matrix_present",
+        "component_token_system_present",
+        "accessibility_review_present",
+        "design_acceptance_criteria_present",
+        "revision_history_present",
+        "not_delivery_status_report",
+        "design_document_body_first",
+        "clean_design_document_only",
+        "no_delivery_or_audit_appendix",
+        "no_delivery_index_or_repair_heading",
+        "no_placeholder_or_garbled_text",
+        "concrete_design_decisions_present",
+        "per_page_visible_copy_complete",
+        "data_and_content_model_present",
+        "review_ready_for_product_design_engineering",
+    ]
+    return quality_score >= 0.90 and not data.get("blockers") and all(data.get(key) is True for key in required_flags)
+
+
+def stage_approval_passed(run_dir: Path, manifest: dict[str, Any], key: str) -> bool:
+    data = artifact_json_object(run_dir, manifest, key)
+    if not data:
+        return False
+    return (
+        data.get("passed") is True
+        and data.get("user_approved") is True
+        and str(data.get("approved_by") or "").lower() not in {"", "agent", "assistant", "codex"}
+        and bool(data.get("approved_at"))
+    )
 
 
 def artifact_json_passed(run_dir: Path, manifest: dict[str, Any], key: str) -> bool:
@@ -350,6 +384,12 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
     status["main_audit_passed"] = audit_passed(run_dir, manifest)
     status["structured_design_doc_ready"] = structured_doc_ready(run_dir, manifest)
     status["structured_design_doc_quality_passed"] = structured_doc_quality_passed(run_dir, manifest)
+    status["style_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_style")
+    status["interaction_design_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_interaction_design")
+    status["ai_design_images_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_ai_design_images")
+    status["design_doc_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_design_doc")
+    status["feishu_doc_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_feishu_doc")
+    status["feishu_doc_content_verified"] = artifact_json_passed(run_dir, manifest, "feishu_doc_content_audit")
     prototype_data_path = resolve_run_path(run_dir, (manifest.get("artifacts") or {}).get("prototype_data"))
     status["prototype_data_ready"] = bool(prototype_data_path and prototype_data_path.exists())
     status["react_scaffold_passed"] = artifact_json_passed(run_dir, manifest, "react_scaffold_audit")
@@ -407,9 +447,16 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
             status["main_audit_passed"],
             status["structured_design_doc_ready"],
             status["structured_design_doc_quality_passed"],
+            status["style_user_approved"],
+            status["interaction_design_user_approved"],
+            status["ai_design_images_user_approved"],
+            status["design_doc_user_approved"],
             status["no_active_subagents"],
         ]
     )
+    channels = manifest.get("delivery_channels") or {}
+    if (channels.get("feishu") or {}).get("requested"):
+        allowed = allowed and status["feishu_doc_content_verified"] and status["feishu_doc_user_approved"]
     status["react_allowed"] = allowed
     # Kept as html_allowed for backward compatibility with existing manifests.
     status["html_allowed"] = allowed
