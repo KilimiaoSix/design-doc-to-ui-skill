@@ -43,6 +43,7 @@ skills/
 - 源文档中的每个 required 页面都必须有独立 page brief。
 - 每个 required 页面图都必须由页面级 SubAgent 生成和评审。
 - 同时最多 6 个活跃 SubAgent；页面多时必须分批。
+- 源文档里明确写出的风格类型、参考产品、品牌形容词、视觉 do/don't 规则，必须先被提取，并在风格打样中获得高于 catalog 默认预设的权重。
 - React 和 Figma 只能在设计图、主审计和结构化设计文档完成后开始。
 - React 默认输出 Vite 小前端项目，不能只是整页图片浏览器；主 agent 必须先创建 app shell、route registry、style system、page slots 和 worker ownership map。
 - React 页面 worker 必须先产出 `visual-decomposition.json`、`dom-element-inventory.json`、`visual-replica-audit.json`，再登记到 `prototype/qa/react-page-worker-registry.json`；主 agent 必须通过 `react-navigation-audit.json` 验证全局路由、跨页状态和完整跳转流。

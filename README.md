@@ -45,6 +45,7 @@ If a required companion skill is missing or unreadable, that delivery stage is b
 - Every required source page must have its own page brief.
 - Every required page image must be generated and reviewed by a page-level SubAgent.
 - At most 6 SubAgents may be active at the same time; larger runs are batched.
+- Explicit style expectations in the source document, such as named style types, benchmark apps, brand adjectives, or visual do/don't rules, must be extracted and weighted above catalog defaults during style sampling.
 - React and Figma work starts only after design images, main audit, and structured design document are complete.
 - React output is a component-level Vite project, not an image viewer. The main agent must first create the app shell, route registry, style system, page slots, and worker ownership map.
 - React page workers must produce `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json` before registration in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.

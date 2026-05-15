@@ -123,6 +123,7 @@ Read `references/source-ingestion.md` when handling input sources.
 - For Feishu/Lark wiki/doc URLs, use the `lark-doc` skill. Extract text, tables, references, images, and source outline/heading IDs. Download relevant images into the project output folder.
 - For Markdown, parse the heading structure, local image links, remote image links, tables, and code blocks.
 - Normalize every source into `source_bundle` and `app_requirements_summary` before generating images.
+- Extract explicit expected style types from the source into `app_requirements_summary.visual_style_signals` before style exploration.
 - Set `requested_output_language` from the user's request language. If the user gives no clear preference, use the source document's primary language.
 
 ## SubAgent Direct-Use Gate
@@ -143,6 +144,7 @@ Before spawning any SubAgent:
 Read `references/style-gate.md` before page image generation.
 
 - First derive product-specific visual principles from the source, brand assets, target users, emotional tone, and interaction model.
+- Before proposing style directions, check whether the original source document already names or strongly implies an expected style type. If it does, raise that style expectation's weight above catalog defaults and agent preference.
 - Use `assets/style-catalog/catalog.md` and `assets/style-catalog/style-presets.json` only as references and guardrails, not as the default final style set.
 - Create 2-3 custom style directions unless the user explicitly requests one known style or provides strict brand guidelines.
 - Generate style samples in SubAgents with `image_gen`: one SubAgent per candidate style direction, while respecting the global 6-active-SubAgent limit.

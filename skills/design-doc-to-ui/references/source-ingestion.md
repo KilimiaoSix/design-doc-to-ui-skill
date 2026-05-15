@@ -17,6 +17,7 @@ When the user provides a Feishu/Lark wiki or doc URL:
    - referenced docs
    - embedded sheet/base/doc citations
    - source outline IDs and section IDs
+   - explicit visual style expectations, including style names, brand adjectives, platform style requests, mood boards, benchmark apps, and "do/don't" visual constraints
 5. Download relevant document images into the project output folder.
 6. If the document references another Feishu doc that affects the design, fetch that referenced doc too.
 
@@ -29,6 +30,7 @@ When the user provides a Markdown file:
 3. Resolve local image references relative to the Markdown file.
 4. Preserve tables, bullet requirements, and code blocks.
 5. Extract linked design references and remote images when needed.
+6. Extract explicit visual style expectations, including style names, brand adjectives, platform style requests, mood boards, benchmark apps, and "do/don't" visual constraints.
 
 ## Language Detection
 
@@ -100,7 +102,16 @@ Create this before page briefs:
   "must_include_copy": [],
   "must_not_include": [],
   "brand_assets": [],
-  "visual_style_signals": [],
+  "visual_style_signals": [
+    {
+      "signal": "",
+      "source_evidence": "",
+      "signal_type": "explicit_style_type|brand_adjective|platform_style|benchmark_app|visual_do|visual_dont|inferred_mood",
+      "strength": "explicit|strong|weak",
+      "priority": "high|medium|low"
+    }
+  ],
+  "expected_style_types": [],
   "platforms": ["web", "pc", "mobile", "tablet"],
   "acceptance_criteria": [],
   "unknowns": []
@@ -124,3 +135,5 @@ If the page inventory was produced by the main agent instead of being parsed dir
 - A required page may be deferred only after explicit user approval. Record that as `user-approved deferred`.
 
 If key information is missing but reasonable defaults are possible, state the assumption and continue. Ask the user only when the missing information changes the design direction or product scope.
+
+Style words in the source are not decorative metadata. If the source explicitly requests a style type, for example "企业级", "苹果风", "Material 3", "暗黑专业工具", "高端奢华", "游戏化", "教育可爱", "极简 SaaS", or names a benchmark app, preserve it as a high-priority `visual_style_signals` entry. Later style exploration must weight these signals above catalog defaults and above the agent's own aesthetic preference.

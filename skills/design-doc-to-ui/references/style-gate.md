@@ -16,7 +16,29 @@ The 20 preset styles are a vocabulary and quality baseline. They are not the fin
 
 ## Product Visual Principles
 
-Before generating samples, derive:
+Before generating samples, first inspect the original source document, source bundle, requirements summary, tables, screenshots, and brand notes for explicit expected style types.
+
+Write `source_style_expectations` before proposing directions:
+
+```json
+{
+  "has_explicit_style_expectation": true,
+  "expected_style_types": ["企业级工作台", "AI Assistant Copilot"],
+  "source_evidence": [
+    {
+      "quote_or_section": "",
+      "interpretation": "",
+      "strength": "explicit|strong|weak"
+    }
+  ],
+  "weighting_rule": "high-priority source constraint; must influence candidate directions before catalog defaults",
+  "conflicts_or_risks": []
+}
+```
+
+Treat explicit source style expectations as high-priority constraints. They outrank catalog presets, generic "good taste", and the agent's preferred visual direction. At least one candidate direction must directly anchor on the expected style type, and no selected final style may contradict it unless the source expectation conflicts with accessibility, platform fit, or a later user instruction. If source style signals conflict, ask the user or generate contrasting samples that make the tradeoff explicit.
+
+After extracting source style expectations, derive:
 
 - product category and credibility needs
 - user emotional state and desired feeling
@@ -33,9 +55,17 @@ Write these into `product_visual_principles`.
 
 Create 2-3 custom style directions for complete design packages:
 
-- A grounded/default direction that is highly usable and low-risk.
-- A brand-forward direction that amplifies the source's strongest identity signals.
+- A grounded/default direction that is highly usable and low-risk while respecting explicit source style expectations.
+- A brand-forward direction that amplifies the source's strongest identity and expected style signals.
 - A differentiated direction that explores a more distinctive but still usable visual system.
+
+If the source document explicitly names a style type or benchmark, raise its weight in every candidate direction:
+
+- include it in the direction rationale with source evidence;
+- map it to relevant catalog references only as supporting ingredients;
+- preserve its key visual traits in color, typography, component shape, icon/illustration rules, and density;
+- add negative rules preventing accidental drift away from it;
+- reject style samples that ignore or dilute it without a documented reason.
 
 Each direction must define:
 
@@ -49,6 +79,7 @@ Each direction must define:
 - endpoint adaptation notes
 - negative rules
 - risks
+- source style expectation alignment and weighting
 
 Do not reuse catalog preset names as the final direction name unless deliberately selecting that preset. It is fine to cite presets as ingredients, for example "uses the calm surfaces of Health Calm and the task orchestration of AI Assistant Copilot".
 
@@ -68,9 +99,12 @@ Rules:
 - Keep at most 6 SubAgents active at the same time across the whole run. Style sampling is usually 2-3 workers, but it still counts toward the same limit as page-generation and regeneration workers.
 - If style exploration is combined with other active workers, wait until active worker count is below 6 before spawning more.
 - Each SubAgent uses `image_gen` to create either a style board or the same representative page in that direction.
+- Inputs passed to each SubAgent must include `source_style_expectations`. When `has_explicit_style_expectation` is true, the worker must treat it as a weighted constraint in the image-generation prompt and review.
 - The main agent must not generate style samples with `image_gen`.
 - Each SubAgent writes `style-sample-result.json`, `prompt-history.md`, `review.md`, and the final sample image.
 - Main agent reviews samples for product fit, originality, scalability, endpoint fit, readability, and anti-template quality.
+
+If a candidate direction deliberately deviates from an explicit source style expectation, label it as exploratory and lower priority. It cannot be selected unless the user chooses it or the main agent documents why the source expectation is infeasible.
 
 ## When To Ask The User
 
@@ -98,6 +132,8 @@ After review or user confirmation, lock the style:
   "style_name": "",
   "confirmed_by_user": true,
   "source_evidence": [],
+  "source_style_expectations": {},
+  "style_expectation_weighting": "explicit source style signals were treated as high-priority constraints",
   "catalog_references": [],
   "platforms": ["web", "pc", "mobile", "tablet"],
   "visual_keywords": [],
@@ -122,6 +158,8 @@ After review or user confirmation, lock the style:
 ```
 
 Every page prompt, page review, React prototype, and final design document must reference this contract.
+
+Do not lock `global_style_contract` if explicit source style expectations were ignored, omitted from the selected direction rationale, or contradicted without a recorded reason.
 
 ## Fast Path
 
