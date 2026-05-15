@@ -31,7 +31,12 @@ Inputs:
 
 Task:
 1. Read the approved AI page image, structured design document, source requirements, assigned page brief, and React screenshot before writing Figma.
-2. Build or repair one editable Figma frame for the assigned page inside the main-agent Figma scaffold:
+2. Decompose the approved AI page image before writing Figma:
+   - list every major visual region in screen order;
+   - list visible controls, labels, cards, data/content examples, icons, illustrations, decorative marks, and state indicators;
+   - call out nonstandard layout details that must not be simplified, including spacing rhythm, overlapping elements, unusual badges, hand-drawn marks, mascots, or visual density;
+   - write `qa/figma-page-workers/<page_id>/visual-decomposition.json` with these requirements and negative rules.
+3. Build or repair one editable Figma frame for the assigned page inside the main-agent Figma scaffold:
    - use frames, auto layout, text layers, vector shapes, component instances, variables/styles where practical;
    - do not use a full-page screenshot as the implementation;
    - keep the approved image and React screenshot only as locked references or side-by-side references outside the implementation frame;
@@ -40,31 +45,109 @@ Task:
    - recreate layout, typography, spacing, color, controls, states, icons, illustrations, and image assets from the approved design;
    - add page-local prototype links or interaction annotations for primary actions where Figma supports them;
    - record outbound prototype targets for the main agent to wire and verify globally.
-3. Ensure the page frame is frontend-handoff ready:
+4. Ensure the page frame is frontend-handoff ready:
    - layers are named clearly;
    - repeated UI within the page is componentized where practical;
    - colors/type/spacing use reusable styles, variables, or documented layer notes where practical;
    - icons are vector or individual replaceable components/assets;
    - complex illustrations/mascots are individual isolated assets, not embedded full-screen screenshots.
-4. Handle missing assets for this page:
+5. Handle missing assets for this page:
    - crop the desired source element from the approved AI design image or React screenshot as a local reference;
    - start an asset SubAgent with image_gen to generate a clean, single isolated asset on a plain or transparent-friendly background;
    - remove/crop the background locally when needed;
    - save the processed asset under figma-assets/<page_id>/ with source page, prompt, and usage notes;
    - place the isolated asset in Figma as its own editable/replaceable layer;
    - record it for the main `figma-assets/asset-manifest.json`.
-5. Review the assigned frame against the approved AI image and React route:
+6. Write `qa/figma-page-workers/<page_id>/figma-layer-inventory.json` mapping every required element from the visual decomposition to an editable or replaceable Figma layer/component/asset. Include layer path, node id when available, role, editability, and source reference. Required visible elements must not be unmapped or flattened into a screenshot.
+7. Review the assigned frame against the approved AI image and React route:
    - visual 1:1 baseline replication;
    - editable element coverage;
    - icon/asset replication;
    - page-local prototype links or target records;
    - frontend handoff readiness.
+8. Write `qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json` with screenshot/reference comparison notes. It must fail if any visible AI-image element is missing, simplified, flattened, generically substituted, or materially moved.
 
 Write these files:
 - qa/figma-page-workers/<page_id>/worker-result.json
 - qa/figma-page-workers/<page_id>/frame-audit.json
+- qa/figma-page-workers/<page_id>/visual-decomposition.json
+- qa/figma-page-workers/<page_id>/figma-layer-inventory.json
+- qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json
 - qa/figma-page-workers/<page_id>/review.md
 - figma-assets/<page_id>/asset-manifest.fragment.json when generated or processed assets exist
+
+visual-decomposition.json:
+{
+  "passed": true,
+  "page_id": "",
+  "approved_image_analyzed": true,
+  "all_major_regions_listed": true,
+  "all_visible_controls_listed": true,
+  "nonstandard_layouts_identified": true,
+  "must_not_simplify_rules_created": true,
+  "screen_regions": [
+    {
+      "name": "",
+      "position": "",
+      "visual_requirements": [],
+      "must_not_simplify": []
+    }
+  ],
+  "element_inventory": [
+    {
+      "element_id": "",
+      "region": "",
+      "type": "text|control|icon|illustration|card|navigation|data|decoration|state",
+      "visible_description": "",
+      "required": true,
+      "source": "approved_ai_image"
+    }
+  ],
+  "hard_failures": []
+}
+
+figma-layer-inventory.json:
+{
+  "passed": true,
+  "page_id": "",
+  "all_required_sections_layered": true,
+  "all_visible_controls_layered": true,
+  "editable_layer_mapping_complete": true,
+  "no_unmapped_required_elements": true,
+  "no_flattened_major_regions": true,
+  "layer_mappings": [
+    {
+      "element_id": "",
+      "figma_layer_path": "",
+      "figma_node_id": "",
+      "editable_or_replaceable": true,
+      "implementation": "text|auto_layout|vector|component|image_asset|variable_style",
+      "notes": ""
+    }
+  ],
+  "unmapped_required_elements": [],
+  "flattened_required_elements": []
+}
+
+figma-visual-replica-audit.json:
+{
+  "passed": true,
+  "page_id": "",
+  "visual_similarity_score": 0.9,
+  "visual_replica_passed": true,
+  "all_visible_ai_elements_represented": true,
+  "structural_layout_matched": true,
+  "copy_and_iconography_matched": true,
+  "nonstandard_layouts_preserved": true,
+  "no_unapproved_simplification": true,
+  "no_full_screen_image_implementation": true,
+  "missing_visible_elements": [],
+  "simplified_structures": [],
+  "layout_drift": [],
+  "copy_mismatches": [],
+  "icon_or_asset_mismatches": [],
+  "hard_failures": []
+}
 
 worker-result.json:
 {
@@ -79,6 +162,13 @@ worker-result.json:
   "main_figma_scaffold_used": true,
   "shared_styles_followed": true,
   "owned_frame_slot_used": true,
+  "visual_decomposition_completed": true,
+  "layer_inventory_matches_design": true,
+  "visual_replica_audit_passed": true,
+  "all_visible_ai_elements_represented": true,
+  "nonstandard_layouts_preserved": true,
+  "no_unapproved_simplification": true,
+  "no_flattened_major_regions": true,
   "visual_similarity_score": 0.9,
   "editable_element_coverage": 0.98,
   "baseline_replica_passed": true,
@@ -111,12 +201,15 @@ frame-audit.json:
   "asset_reconstruction_passed": true,
   "prototype_links_or_targets_recorded": true,
   "frontend_handoff_ready": true,
+  "visual_decomposition_passed": true,
+  "layer_inventory_passed": true,
+  "visual_replica_audit_passed": true,
   "hard_failures": [],
   "missing_assets": [],
   "repair_required": []
 }
 
-Do not mark passed when the assigned frame is missing, a full-page screenshot is used as implementation, major UI elements are flattened, icons/assets are generic substitutes, page-local prototype targets are not recorded, or frontend handoff would require rebuilding the frame from scratch.
+Do not mark passed when the assigned frame is missing, a full-page screenshot is used as implementation, major UI elements are flattened, any required visual element lacks a Figma layer mapping, distinctive layout is simplified, icons/assets are generic substitutes, page-local prototype targets are not recorded, or frontend handoff would require rebuilding the frame from scratch.
 ```
 
 ## Main-Agent Aggregate Contract
@@ -148,6 +241,12 @@ The aggregate result must include:
   "editable_element_coverage": 0.98,
   "all_required_frames_created": true,
   "all_major_elements_editable": true,
+  "visual_decomposition_completed": true,
+  "layer_inventory_matches_design": true,
+  "visual_replica_audit_passed": true,
+  "all_visible_ai_elements_represented": true,
+  "nonstandard_layouts_preserved": true,
+  "no_unapproved_simplification": true,
   "icons_replicated": true,
   "assets_reconstructed": true,
   "frontend_handoff_ready": true,
@@ -159,7 +258,10 @@ The aggregate result must include:
       "route": "",
       "passed": true,
       "worker_result": "qa/figma-page-workers/<page_id>/worker-result.json",
-      "frame_audit": "qa/figma-page-workers/<page_id>/frame-audit.json"
+      "frame_audit": "qa/figma-page-workers/<page_id>/frame-audit.json",
+      "visual_decomposition": "qa/figma-page-workers/<page_id>/visual-decomposition.json",
+      "layer_inventory": "qa/figma-page-workers/<page_id>/figma-layer-inventory.json",
+      "visual_replica_audit": "qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json"
     }
   ],
   "unresolved_blockers": [],

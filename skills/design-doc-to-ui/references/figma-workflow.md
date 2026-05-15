@@ -35,6 +35,9 @@ Figma work must be managed through intermediate files, not only a final Figma UR
 - `qa/figma-page-worker-registry.json`: main-thread registry of every Figma page worker result.
 - `qa/figma-page-workers/<page_id>/worker-result.json`: page frame implementation result.
 - `qa/figma-page-workers/<page_id>/frame-audit.json`: page-local Figma frame audit.
+- `qa/figma-page-workers/<page_id>/visual-decomposition.json`: approved-image decomposition into regions, visible elements, and "must not simplify" rules.
+- `qa/figma-page-workers/<page_id>/figma-layer-inventory.json`: mapping from every required visual element to an editable Figma layer, component, or replaceable asset.
+- `qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json`: page-level audit comparing the editable frame against the approved AI image and React screenshot.
 - `qa/figma-page-workers/<page_id>/review.md`: page worker self-review and repair notes.
 - `figma-assets/<page_id>/asset-manifest.fragment.json`: page-local generated/processed asset records, when assets are needed.
 - `figma-assets/asset-manifest.json`: merged asset manifest.
@@ -51,6 +54,9 @@ python scripts/record_figma_page_worker_result.py \
   --page-id <page_id> \
   --worker-result qa/figma-page-workers/<page_id>/worker-result.json \
   --frame-audit qa/figma-page-workers/<page_id>/frame-audit.json \
+  --visual-decomposition qa/figma-page-workers/<page_id>/visual-decomposition.json \
+  --layer-inventory qa/figma-page-workers/<page_id>/figma-layer-inventory.json \
+  --visual-replica-audit qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json \
   --review qa/figma-page-workers/<page_id>/review.md
 ```
 
@@ -64,6 +70,8 @@ For each required page:
 - basically replicate layout, information hierarchy, spacing, colors, type scale, component shapes, and major decorative resources from the AI page image and React screenshot;
 - keep the approved image and React screenshot as references only, not as full-screen implementation layers;
 - make all major UI elements editable or replaceable, including text, cards, controls, icons, illustrations, image assets, and state panels;
+- map every visible AI-image element to a Figma layer/component/asset and leave no required element unmapped or flattened;
+- preserve distinctive layout details from the approved image; do not simplify unusual spacing, overlapping elements, hand-drawn marks, mascots, or dense section structures into generic UI-kit blocks;
 - recreate icons and repeated controls as vectors, components, or individual replaceable assets where practical;
 - make the frame frontend-handoff ready with clear layers, reusable styles/variables/components where practical, and annotations for implementation-critical details;
 - add prototype links for primary navigation, main buttons, modal/state flows, and recovery paths where Figma supports them;
@@ -78,6 +86,7 @@ Baseline Figma replication means:
 - major regions, section order, visual density, component shapes, and key imagery match the approved image closely enough to review the same design;
 - Figma does not substitute a generic layout, component library default, pasted screenshot, or text-only wireframe for the image-generated design;
 - editable element coverage is at least 0.95 and no primary UI region is flattened into a screenshot;
+- page-level visual decomposition, Figma layer inventory, and visual replica audit all pass before the page worker is registered;
 - icons and visual assets match the approved image language instead of using generic substitutes;
 - primary navigation and main actions have prototype links or documented Figma limitations;
 - global prototype links and cross-frame jumps are verified by the main agent after all page frames are complete;

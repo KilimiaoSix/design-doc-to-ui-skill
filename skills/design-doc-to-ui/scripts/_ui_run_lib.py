@@ -396,6 +396,8 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
         >= page_count
     )
     status["figma_global_prototype_links_passed"] = figma_result.get("global_prototype_links_passed") is True
+    status["revision_plan_passed"] = artifact_json_passed(run_dir, manifest, "revision_plan")
+    status["revision_subagent_registry_passed"] = artifact_json_passed(run_dir, manifest, "revision_subagent_registry")
     status["no_active_subagents"] = not active_subagents(manifest)
     allowed = all(
         [

@@ -876,6 +876,102 @@ def validate_figma_integration_audit(run_dir: Path, manifest: dict[str, Any], bl
         add(blockers, "FIGMA_INTEGRATION_HARD_FAILURES", "Figma integration audit contains hard failures.")
 
 
+def validate_figma_page_visual_artifacts(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    registry, error = load_artifact_json(run_dir, manifest, "figma_page_worker_registry")
+    if error:
+        return
+    pages = registry.get("pages") or []
+    if not isinstance(pages, list):
+        return
+    threshold = float((manifest.get("prototype_policy") or {}).get("visual_similarity_threshold", 0.80))
+    for item in pages:
+        if not isinstance(item, dict):
+            continue
+        page_id = str(item.get("page_id") or "")
+        visual_decomposition = validate_referenced_worker_file(
+            run_dir,
+            item.get("visual_decomposition"),
+            blockers,
+            "FIGMA_VISUAL_DECOMPOSITION_MISSING",
+            "FIGMA_VISUAL_DECOMPOSITION_INVALID",
+            page_id or None,
+        )
+        if visual_decomposition:
+            for key in [
+                "approved_image_analyzed",
+                "all_major_regions_listed",
+                "all_visible_controls_listed",
+                "nonstandard_layouts_identified",
+                "must_not_simplify_rules_created",
+            ]:
+                if visual_decomposition.get(key) is not True:
+                    add(blockers, "FIGMA_VISUAL_DECOMPOSITION_FIELD_FAILED", f"Figma visual decomposition failed field: {key}.", page_id or None)
+            if not visual_decomposition.get("screen_regions"):
+                add(blockers, "FIGMA_VISUAL_DECOMPOSITION_REGIONS_EMPTY", "Figma visual decomposition has no screen_regions.", page_id or None)
+            if not visual_decomposition.get("element_inventory"):
+                add(blockers, "FIGMA_VISUAL_DECOMPOSITION_ELEMENTS_EMPTY", "Figma visual decomposition has no element_inventory.", page_id or None)
+            if visual_decomposition.get("hard_failures"):
+                add(blockers, "FIGMA_VISUAL_DECOMPOSITION_HARD_FAILURES", "Figma visual decomposition contains hard failures.", page_id or None)
+
+        layer_inventory = validate_referenced_worker_file(
+            run_dir,
+            item.get("layer_inventory"),
+            blockers,
+            "FIGMA_LAYER_INVENTORY_MISSING",
+            "FIGMA_LAYER_INVENTORY_INVALID",
+            page_id or None,
+        )
+        if layer_inventory:
+            for key in [
+                "all_required_sections_layered",
+                "all_visible_controls_layered",
+                "editable_layer_mapping_complete",
+                "no_unmapped_required_elements",
+                "no_flattened_major_regions",
+            ]:
+                if layer_inventory.get(key) is not True:
+                    add(blockers, "FIGMA_LAYER_INVENTORY_FIELD_FAILED", f"Figma layer inventory failed field: {key}.", page_id or None)
+            for key in ["unmapped_required_elements", "flattened_required_elements"]:
+                if layer_inventory.get(key):
+                    add(blockers, "FIGMA_LAYER_INVENTORY_UNRESOLVED_ELEMENTS", f"Figma layer inventory has unresolved {key}.", page_id or None)
+
+        visual_audit = validate_referenced_worker_file(
+            run_dir,
+            item.get("visual_replica_audit"),
+            blockers,
+            "FIGMA_VISUAL_REPLICA_AUDIT_MISSING",
+            "FIGMA_VISUAL_REPLICA_AUDIT_INVALID",
+            page_id or None,
+        )
+        if visual_audit:
+            for key in [
+                "visual_replica_passed",
+                "all_visible_ai_elements_represented",
+                "structural_layout_matched",
+                "copy_and_iconography_matched",
+                "nonstandard_layouts_preserved",
+                "no_unapproved_simplification",
+                "no_full_screen_image_implementation",
+            ]:
+                if visual_audit.get(key) is not True:
+                    add(blockers, "FIGMA_VISUAL_REPLICA_FIELD_FAILED", f"Figma visual replica audit failed field: {key}.", page_id or None)
+            score = score_value(visual_audit)
+            if score is None:
+                add(blockers, "FIGMA_VISUAL_REPLICA_SCORE_MISSING", "Figma visual replica audit missing visual_similarity_score.", page_id or None)
+            elif score < threshold:
+                add(blockers, "FIGMA_VISUAL_REPLICA_SCORE_LOW", f"Figma visual replica score {score:.2f} is below {threshold:.2f}.", page_id or None)
+            for key in [
+                "missing_visible_elements",
+                "simplified_structures",
+                "layout_drift",
+                "copy_mismatches",
+                "icon_or_asset_mismatches",
+                "hard_failures",
+            ]:
+                if visual_audit.get(key):
+                    add(blockers, "FIGMA_VISUAL_REPLICA_UNRESOLVED_DIFFS", f"Figma visual replica audit has unresolved {key}.", page_id or None)
+
+
 def validate_figma_delivery(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
     if not companion_loaded(manifest, "figma_replica"):
         add(blockers, "FIGMA_COMPANION_NOT_LOADED", "design-doc-to-ui-figma-replica must be loaded before Figma delivery.")
@@ -888,8 +984,9 @@ def validate_figma_delivery(run_dir: Path, manifest: dict[str, Any], blockers: l
         required_ids,
         blockers,
         "FIGMA",
-        ["worker_result", "frame_audit", "review"],
+        ["worker_result", "frame_audit", "visual_decomposition", "layer_inventory", "visual_replica_audit", "review"],
     )
+    validate_figma_page_visual_artifacts(run_dir, manifest, blockers)
     validate_figma_link_plan(run_dir, manifest, blockers)
     validate_figma_integration_audit(run_dir, manifest, blockers)
     worker_result, error = load_artifact_json(run_dir, manifest, "figma_worker_result")
@@ -921,6 +1018,12 @@ def validate_figma_delivery(run_dir: Path, manifest: dict[str, Any], blockers: l
             "figma_scaffold_passed",
             "page_workers_started_after_scaffold",
             "page_workers_used_shared_frame_slots",
+            "visual_decomposition_completed",
+            "layer_inventory_matches_design",
+            "visual_replica_audit_passed",
+            "all_visible_ai_elements_represented",
+            "nonstandard_layouts_preserved",
+            "no_unapproved_simplification",
         ]:
             if worker_result.get(key) is not True:
                 add(blockers, "FIGMA_WORKER_FIELD_MISSING", f"Figma worker result missing or failed field: {key}.")
@@ -932,7 +1035,7 @@ def validate_figma_delivery(run_dir: Path, manifest: dict[str, Any], blockers: l
             {str(page.get("page_id")) for page in required_pages(manifest)},
             blockers,
             "FIGMA",
-            ["worker_result", "frame_audit"],
+            ["worker_result", "frame_audit", "visual_decomposition", "layer_inventory", "visual_replica_audit"],
         )
         for payload in page_worker_payloads:
             page_id = str(payload.get("page_id") or "")
@@ -949,6 +1052,13 @@ def validate_figma_delivery(run_dir: Path, manifest: dict[str, Any], blockers: l
                 "baseline_replica_passed",
                 "editable_elements_passed",
                 "frontend_handoff_ready",
+                "visual_decomposition_completed",
+                "layer_inventory_matches_design",
+                "visual_replica_audit_passed",
+                "all_visible_ai_elements_represented",
+                "nonstandard_layouts_preserved",
+                "no_unapproved_simplification",
+                "no_flattened_major_regions",
             ]:
                 if key in payload and payload.get(key) is not True:
                     add(blockers, "FIGMA_PAGE_WORKER_FIELD_FAILED", f"Figma page worker file failed field: {key}.", page_id or None)
@@ -1041,6 +1151,117 @@ def validate_delivery(run_dir: Path, manifest: dict[str, Any], blockers: list[di
         validate_figma_delivery(run_dir, manifest, blockers)
 
 
+def revision_plan_path(run_dir: Path, manifest: dict[str, Any]) -> Path:
+    artifacts = manifest.get("artifacts") or {}
+    return resolve_run_path(run_dir, artifacts.get("revision_plan")) or (run_dir / "qa" / "revision-plan.json")
+
+
+def expected_revision_match(entry: dict[str, Any], expected: dict[str, Any]) -> bool:
+    if str(entry.get("scope") or "") != str(expected.get("scope") or ""):
+        return False
+    expected_page = str(expected.get("page_id") or "")
+    if expected_page and str(entry.get("page_id") or "") != expected_page:
+        return False
+    expected_channel = str(expected.get("channel") or "")
+    if expected_channel and str(entry.get("channel") or "") != expected_channel:
+        return False
+    return True
+
+
+def validate_revision_gate(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    plan_path = revision_plan_path(run_dir, manifest)
+    if not plan_path.exists():
+        return
+    try:
+        plan = load_json(plan_path)
+    except Exception as exc:
+        add(blockers, "REVISION_PLAN_INVALID_JSON", f"revision-plan.json is invalid JSON: {exc}")
+        return
+    if not isinstance(plan, dict):
+        add(blockers, "REVISION_PLAN_INVALID", "revision-plan.json must be a JSON object.")
+        return
+    if plan.get("passed") is not True:
+        add(blockers, "REVISION_PLAN_NOT_PASSED", "revision-plan.json must have passed=true before revision work can complete.")
+    revision_id = str(plan.get("revision_id") or "")
+    if not revision_id:
+        add(blockers, "REVISION_ID_MISSING", "revision-plan.json must include revision_id.")
+    expected = [item for item in plan.get("expected_subagents") or [] if isinstance(item, dict)]
+    if plan.get("subagent_required") is not True:
+        add(blockers, "REVISION_SUBAGENT_REQUIRED_MISSING", "revision-plan.json must set subagent_required=true for redo/revision work.")
+    if not expected:
+        add(blockers, "REVISION_EXPECTED_SUBAGENTS_MISSING", "revision-plan.json must list expected_subagents for affected pages/channels.")
+        return
+    if plan.get("main_thread_direct_edit_allowed") is not False:
+        add(blockers, "REVISION_MAIN_THREAD_DIRECT_EDIT_NOT_BLOCKED", "revision-plan.json must set main_thread_direct_edit_allowed=false.")
+
+    artifacts = manifest.get("artifacts") or {}
+    registry_path = resolve_run_path(run_dir, artifacts.get("revision_subagent_registry")) or (run_dir / "qa" / "revision-subagent-registry.json")
+    if not registry_path.exists():
+        add(blockers, "REVISION_SUBAGENT_REGISTRY_MISSING", "Missing artifact: revision_subagent_registry")
+        return
+    try:
+        registry = load_json(registry_path)
+    except Exception as exc:
+        add(blockers, "REVISION_SUBAGENT_REGISTRY_INVALID", f"Invalid JSON artifact revision_subagent_registry: {exc}")
+        return
+    if not isinstance(registry, dict):
+        add(blockers, "REVISION_SUBAGENT_REGISTRY_INVALID", "revision-subagent-registry.json must be a JSON object.")
+        return
+    if registry.get("passed") is not True:
+        add(blockers, "REVISION_SUBAGENT_REGISTRY_NOT_PASSED", "revision-subagent-registry.json is missing passed=true.")
+    if revision_id and registry.get("revision_id") != revision_id:
+        add(blockers, "REVISION_REGISTRY_ID_MISMATCH", "revision-subagent-registry.json revision_id does not match revision-plan.json.")
+    validate_max_active_subagents(registry, blockers, "REVISION")
+    if registry.get("unresolved_blockers"):
+        add(blockers, "REVISION_SUBAGENT_REGISTRY_BLOCKERS", "revision-subagent-registry.json contains unresolved blockers.")
+    entries = registry.get("subagents") or []
+    if not isinstance(entries, list):
+        add(blockers, "REVISION_SUBAGENT_REGISTRY_INVALID", "revision-subagent-registry subagents must be a list.")
+        return
+    for entry in entries:
+        if not isinstance(entry, dict):
+            add(blockers, "REVISION_SUBAGENT_ENTRY_INVALID", "revision-subagent-registry entries must be objects.")
+            continue
+        page_id = str(entry.get("page_id") or "") or None
+        if not entry.get("subagent_id"):
+            add(blockers, "REVISION_SUBAGENT_ID_MISSING", "Registered revision work must include the SubAgent id returned by spawn_agent.", page_id)
+        if entry.get("passed") is not True:
+            add(blockers, "REVISION_SUBAGENT_ENTRY_NOT_PASSED", "Registered revision SubAgent result is not passed.", page_id)
+        worker_payload = validate_referenced_worker_file(
+            run_dir,
+            entry.get("worker_result"),
+            blockers,
+            "REVISION_SUBAGENT_WORKER_RESULT_MISSING",
+            "REVISION_SUBAGENT_WORKER_RESULT_INVALID",
+            page_id,
+        )
+        validate_referenced_file_exists(
+            run_dir,
+            entry.get("review"),
+            blockers,
+            "REVISION_SUBAGENT_REVIEW_MISSING",
+            page_id,
+        )
+        if worker_payload:
+            if worker_payload.get("subagent_used") is not True:
+                add(blockers, "REVISION_WORKER_SUBAGENT_USED_MISSING", "Revision worker-result.json must include subagent_used=true.", page_id)
+            if worker_payload.get("main_thread_direct_implementation") is not False:
+                add(blockers, "REVISION_MAIN_THREAD_DIRECT_IMPLEMENTATION", "Revision worker-result.json must include main_thread_direct_implementation=false.", page_id)
+            if worker_payload.get("unresolved_blockers"):
+                add(blockers, "REVISION_WORKER_UNRESOLVED_BLOCKERS", "Revision worker-result.json contains unresolved blockers.", page_id)
+    for expected_item in expected:
+        if expected_item.get("required") is False:
+            continue
+        match = next((entry for entry in entries if isinstance(entry, dict) and expected_revision_match(entry, expected_item) and entry.get("passed") is True), None)
+        if not match:
+            add(
+                blockers,
+                "REVISION_EXPECTED_SUBAGENT_NOT_REGISTERED",
+                "Expected revision SubAgent result is missing or not passed.",
+                str(expected_item.get("page_id") or "") or None,
+            )
+
+
 def validate(run_dir: Path, phase: str) -> dict[str, Any]:
     manifest = load_manifest(run_dir)
     blockers: list[dict[str, Any]] = []
@@ -1067,6 +1288,8 @@ def validate(run_dir: Path, phase: str) -> dict[str, Any]:
         add(blockers, "STRUCTURED_DESIGN_DOC_MISSING", "Structured design document is missing.")
     if not structured_doc_quality_passed(run_dir, manifest):
         validate_structured_doc_audit(run_dir, manifest, blockers)
+
+    validate_revision_gate(run_dir, manifest, blockers)
 
     phase_status = refresh_phase_status(manifest, run_dir)
     react_allowed = not blockers and phase_status.get("react_allowed", phase_status.get("html_allowed", False))

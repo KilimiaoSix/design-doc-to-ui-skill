@@ -64,6 +64,9 @@ Figma delivery must produce intermediate process files, not only a final Figma U
 - `qa/figma-page-worker-registry.json`
 - `qa/figma-page-workers/<page_id>/worker-result.json`
 - `qa/figma-page-workers/<page_id>/frame-audit.json`
+- `qa/figma-page-workers/<page_id>/visual-decomposition.json`
+- `qa/figma-page-workers/<page_id>/figma-layer-inventory.json`
+- `qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json`
 - `qa/figma-page-workers/<page_id>/review.md`
 - `figma-assets/<page_id>/asset-manifest.fragment.json` when page-local assets are generated
 - `figma-assets/asset-manifest.json` when any assets are generated or processed
@@ -80,10 +83,19 @@ python scripts/record_figma_page_worker_result.py \
   --page-id <page_id> \
   --worker-result qa/figma-page-workers/<page_id>/worker-result.json \
   --frame-audit qa/figma-page-workers/<page_id>/frame-audit.json \
+  --visual-decomposition qa/figma-page-workers/<page_id>/visual-decomposition.json \
+  --layer-inventory qa/figma-page-workers/<page_id>/figma-layer-inventory.json \
+  --visual-replica-audit qa/figma-page-workers/<page_id>/figma-visual-replica-audit.json \
   --review qa/figma-page-workers/<page_id>/review.md
 ```
 
 The registry must pass before aggregate Figma audits can pass.
+
+Each page worker must first decompose the approved AI image into required visible regions and elements, then map every required element to editable Figma layers/components, then audit the resulting frame against the approved image. A worker is not complete until these three files pass:
+
+- `visual-decomposition.json`: lists major regions, visible controls/content, nonstandard layout details, icon/asset expectations, and "must not simplify" rules.
+- `figma-layer-inventory.json`: maps each required visual element to a Figma layer path/node id or generated asset, marks it editable/replaceable, and lists no unmapped or flattened required elements.
+- `figma-visual-replica-audit.json`: compares the implementation frame to the approved AI image and reports no missing visible elements, simplified structures, layout drift, copy/icon mismatches, full-screen image implementation, or hard failures.
 
 ## 80% Replica Gate
 
@@ -101,6 +113,9 @@ Hard failures:
 - wrong output language;
 - material layout/style mismatch;
 - generic reinterpretation instead of baseline replication of the approved imagegen design;
+- missing visual decomposition, Figma layer inventory, or page-level visual replica audit;
+- any required visible AI-image element not mapped to an editable or replaceable Figma layer/component;
+- unapproved simplification of distinctive layout, spacing, section shape, icon language, illustration treatment, or visual density;
 - missing or generic-substituted icons/assets when the approved design shows specific icons/assets;
 - generated assets are not isolated, processed, registered, or traceable in `figma-assets/asset-manifest.json`;
 - unresolved missing assets.

@@ -326,6 +326,8 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "figma_page_worker_registry": "qa/figma-page-worker-registry.json",
             "figma_prototype_link_plan": "qa/figma-prototype-link-plan.json",
             "figma_integration_audit": "qa/figma-integration-audit.json",
+            "revision_plan": "qa/revision-plan.json",
+            "revision_subagent_registry": "qa/revision-subagent-registry.json",
         },
         "phase_status": {
             "app_requirements_summary_ready": True,
@@ -356,6 +358,8 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "figma_prototype_link_plan_passed": False,
             "figma_integration_audit_passed": False,
             "figma_global_prototype_links_passed": False,
+            "revision_plan_passed": False,
+            "revision_subagent_registry_passed": False,
             "visual_parity_passed": False,
             "delivery_passed": False,
         },

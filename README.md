@@ -49,7 +49,8 @@ If a required companion skill is missing or unreadable, that delivery stage is b
 - React output is a component-level Vite project, not an image viewer. The main agent must first create the app shell, route registry, style system, page slots, and worker ownership map.
 - React page workers must produce `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json` before registration in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.
 - React demo usability is gated by `prototype/qa/react-usability-audit.json`: every page must be scrollable when content exceeds the viewport, bottom content must be reachable, and a right-side page switcher must navigate to every required route without affecting visual parity screenshots.
-- Figma output must start from `qa/figma-scaffold-audit.json`, register page workers in `qa/figma-page-worker-registry.json`, and pass `qa/figma-prototype-link-plan.json` plus `qa/figma-integration-audit.json`.
+- Figma output must start from `qa/figma-scaffold-audit.json`, register page workers in `qa/figma-page-worker-registry.json`, and pass `qa/figma-prototype-link-plan.json` plus `qa/figma-integration-audit.json`. Each Figma page worker must also produce `visual-decomposition.json`, `figma-layer-inventory.json`, and `figma-visual-replica-audit.json`.
+- Redo/revision work must write `qa/revision-plan.json`, start the expected SubAgents for affected page images, React pages, Figma pages, or Feishu delivery artifacts, and register them in `qa/revision-subagent-registry.json`; direct main-thread implementation of affected revision work is a blocker.
 - React and Figma visual parity are judged per page. Average score cannot hide a failed page.
 - Final docs, React metadata, and optional Feishu/Figma outputs follow the user's request language.
 
@@ -150,7 +151,8 @@ python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir ou
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
 python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
 python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --visual-decomposition prototype/qa/react-page-workers/home/visual-decomposition.json --dom-inventory prototype/qa/react-page-workers/home/dom-element-inventory.json --visual-replica-audit prototype/qa/react-page-workers/home/visual-replica-audit.json --review prototype/qa/react-page-workers/home/review.md
-python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --review qa/figma-page-workers/home/review.md
+python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --visual-decomposition qa/figma-page-workers/home/visual-decomposition.json --layer-inventory qa/figma-page-workers/home/figma-layer-inventory.json --visual-replica-audit qa/figma-page-workers/home/figma-visual-replica-audit.json --review qa/figma-page-workers/home/review.md
+python skills/design-doc-to-ui/scripts/record_revision_subagent_result.py --run-dir out/minihire --revision-id rev-002 --scope react-page --page-id home --channel react --subagent-id <spawn_agent_id> --worker-result prototype/qa/react-page-workers/home/worker-result.json --review prototype/qa/react-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
 ```
 
@@ -174,7 +176,7 @@ Representative regression checks:
 - `validate_design_run.py --phase design-completion` returns `react_allowed=false` before design artifacts and docs exist.
 - With mock worker artifacts, locked style contract, main audit, and structured design doc, the design-completion gate passes.
 - `build_prototype_data.py --template react --copy-template` creates a runnable React project with all required routes.
-- Missing React scaffold audit, React page visual decomposition, React DOM inventory, React page visual replica audit, React page worker registry, React navigation audit, React usability audit, Figma scaffold audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
+- Missing React scaffold audit, React page visual decomposition, React DOM inventory, React page visual replica audit, React page worker registry, React navigation audit, React usability audit, Figma scaffold audit, Figma page visual decomposition, Figma layer inventory, Figma visual replica audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, revision SubAgent registry when a revision plan exists, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
 
 ## Notes
 
