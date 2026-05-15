@@ -46,6 +46,7 @@ skills/
 - React 和 Figma 只能在设计图、主审计和结构化设计文档完成后开始。
 - React 默认输出 Vite 小前端项目，不能只是整页图片浏览器；主 agent 必须先创建 app shell、route registry、style system、page slots 和 worker ownership map。
 - React 页面 worker 必须先产出 `visual-decomposition.json`、`dom-element-inventory.json`、`visual-replica-audit.json`，再登记到 `prototype/qa/react-page-worker-registry.json`；主 agent 必须通过 `react-navigation-audit.json` 验证全局路由、跨页状态和完整跳转流。
+- React demo 可用性由 `prototype/qa/react-usability-audit.json` 强制门禁：内容超过视口的页面必须可滚动，底部内容必须可达，并且右侧页面快捷菜单必须能跳转到每个 required route，同时不影响视觉复刻截图。
 - Figma 必须先通过 `qa/figma-scaffold-audit.json`，页面 worker 必须登记到 `qa/figma-page-worker-registry.json`，并通过 `qa/figma-prototype-link-plan.json` 与 `qa/figma-integration-audit.json`。
 - React/Figma 复刻按逐页分数判断，单页低于 `0.80` 即失败。
 - 最终文档、React 元数据、飞书/Figma 输出都跟随用户请求语言。
@@ -178,7 +179,7 @@ python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/de
 - 设计图、worker 结果、主审计和结构化文档不完整时，`validate_design_run.py --phase design-completion` 返回 `react_allowed=false`；
 - 补齐 mock worker 产物、锁定风格、主审计和结构化设计文档后，design-completion gate 通过；
 - `build_prototype_data.py --template react --copy-template` 生成包含全部 required route 的 React 项目；
-- 缺 React scaffold audit、React 页面视觉拆解、React DOM 映射、React 页面视觉复刻审计、React 页面 worker registry、React navigation audit、Figma scaffold audit、Figma 页面 worker registry、Figma prototype link plan、Figma integration audit、companion、视觉审计、飞书审计、route、page brief、worker-result、final image、结构化文档都会输出明确 blocker code。
+- 缺 React scaffold audit、React 页面视觉拆解、React DOM 映射、React 页面视觉复刻审计、React 页面 worker registry、React navigation audit、React usability audit、Figma scaffold audit、Figma 页面 worker registry、Figma prototype link plan、Figma integration audit、companion、视觉审计、飞书审计、route、page brief、worker-result、final image、结构化文档都会输出明确 blocker code。
 
 ## 仓库说明
 

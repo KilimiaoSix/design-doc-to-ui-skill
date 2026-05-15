@@ -355,10 +355,12 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
     status["react_scaffold_passed"] = artifact_json_passed(run_dir, manifest, "react_scaffold_audit")
     status["react_page_worker_registry_passed"] = artifact_json_passed(run_dir, manifest, "react_page_worker_registry")
     status["react_navigation_audit_passed"] = artifact_json_passed(run_dir, manifest, "react_navigation_audit")
+    status["react_usability_audit_passed"] = artifact_json_passed(run_dir, manifest, "react_usability_audit")
     status["react_worker_passed"] = artifact_json_passed(run_dir, manifest, "react_worker_result")
     status["react_interaction_audit_passed"] = artifact_json_passed(run_dir, manifest, "react_interaction_audit")
     react_result = artifact_json_object(run_dir, manifest, "react_worker_result")
     react_audit = artifact_json_object(run_dir, manifest, "react_interaction_audit")
+    react_usability = artifact_json_object(run_dir, manifest, "react_usability_audit")
     page_count = len(pages)
     react_page_results = react_result.get("page_worker_results") or []
     status["react_page_workers_passed"] = (
@@ -370,6 +372,15 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
     status["global_navigation_passed"] = (
         react_result.get("global_navigation_passed") is True
         and react_audit.get("global_navigation_passed") is True
+    )
+    status["react_scroll_behavior_passed"] = (
+        react_result.get("scroll_behavior_passed") is True
+        and react_audit.get("scroll_behavior_passed") is True
+        and react_usability.get("scroll_behavior_passed") is True
+    )
+    status["react_demo_page_switcher_passed"] = (
+        react_result.get("demo_page_switcher_passed") is True
+        and react_usability.get("page_menu_route_switching_passed") is True
     )
     status["figma_worker_passed"] = artifact_json_passed(run_dir, manifest, "figma_worker_result")
     status["figma_scaffold_passed"] = artifact_json_passed(run_dir, manifest, "figma_scaffold_audit")

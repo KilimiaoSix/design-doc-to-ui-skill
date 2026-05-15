@@ -39,6 +39,7 @@ prototype/
     react-scaffold-audit.json
     react-page-worker-registry.json
     react-navigation-audit.json
+    react-usability-audit.json
     react-worker-result.json
     react-interaction-audit.json
     react-page-workers/
@@ -72,6 +73,7 @@ React prototype work must be managed through intermediate files, not only a fina
 - `prototype/qa/react-page-workers/<page_id>/interaction-audit.json`: page-local interaction audit.
 - `prototype/qa/react-page-workers/<page_id>/review.md`: page worker self-review and repair notes.
 - `prototype/qa/react-navigation-audit.json`: main-agent global navigation, route target, cross-page state, and recovery-flow audit.
+- `prototype/qa/react-usability-audit.json`: main-agent demo usability audit for right-side page switching, scrollability, and content reachability.
 - `prototype/qa/react-worker-result.json`: aggregate implementation result.
 - `prototype/qa/react-interaction-audit.json`: aggregate interaction and whole-flow audit.
 - `qa/visual-parity-audit.json`: visual parity gate against approved design images.
@@ -102,6 +104,8 @@ The scaffold must include:
 - stable page slots or page modules for every non-deferred required route;
 - shared layout primitives, base components, CSS variables/tokens, typography, spacing, radius, color, and interaction state conventions;
 - responsive constraints and shared navigation patterns;
+- a right-side demo page switcher outside the replicated page frame, covering every required route without affecting visual parity screenshots;
+- a scroll container contract that prevents accidental page/body scroll lock and defines how long pages handle wheel, trackpad, and touch scrolling;
 - page worker ownership map showing which files each worker may edit;
 - integration contract for outbound route targets and shared state.
 
@@ -114,6 +118,11 @@ Write `prototype/qa/react-scaffold-audit.json` before starting page workers:
   "route_registry_created": true,
   "style_system_locked": true,
   "page_slots_created": true,
+  "demo_route_switcher_created": true,
+  "route_switcher_covers_all_pages": true,
+  "route_switcher_outside_replica_frame": true,
+  "scroll_container_contract_created": true,
+  "body_or_page_scroll_not_blocked": true,
   "worker_ownership_map_created": true,
   "shared_navigation_contract_created": true,
   "required_page_count": 7,
@@ -129,6 +138,8 @@ Write `prototype/qa/react-scaffold-audit.json` before starting page workers:
 ```
 
 Do not start React page workers until this audit exists and has `passed: true`. Page workers must use the scaffold, style tokens, and owned file map instead of creating their own global layout or style system.
+
+The right-side page switcher is demo chrome, not part of the replicated product page. It must sit outside the phone/page frame on desktop or collapse into a non-obstructive menu on narrow screens. It must be excluded from page visual parity screenshots by capturing only the replica frame or by marking demo chrome with a stable selector such as `data-demo-chrome="true"`.
 
 ## React Page Worker Gate
 
@@ -148,6 +159,7 @@ Each page worker must implement its assigned page as a real component-level fron
 - after implementation, create `dom-element-inventory.json` mapping every decomposed visual element to a React component, DOM node, CSS construction, SVG/vector, or isolated asset;
 - render the assigned route, compare it with the approved AI image, and create `visual-replica-audit.json` before claiming page completion;
 - test the assigned route and page-local interaction states locally;
+- verify wheel/trackpad scrolling, touch-style scrolling when feasible, bottom-content reachability, and absence of accidental scroll lock for the assigned route;
 - record outbound route targets and shared state dependencies for main-agent integration;
 - repair visual and behavioral issues before returning;
 - write `prototype/qa/react-page-workers/<page_id>/worker-result.json`, `prototype/qa/react-page-workers/<page_id>/interaction-audit.json`, and `prototype/qa/react-page-workers/<page_id>/review.md`.
@@ -158,11 +170,67 @@ After all page workers return, the main agent owns:
 - cross-page state, navigation guards, back/retry/recovery routes, and handoff between pages;
 - whole-product flow verification;
 - `prototype/qa/react-navigation-audit.json`;
+- `prototype/qa/react-usability-audit.json`;
 - aggregate `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json`.
 
 Do not mark the React phase complete from the main thread alone. If React page SubAgent capability is technically unavailable, mark React prototype generation blocked. Do not replace required page workers with a quick main-thread implementation.
 
 React page workers must not edit `ui-run.json`, page briefs, design image worker outputs, unrelated routes, or unrelated files.
+
+## Scrollability And Demo Navigation Gate
+
+Every React demo must be usable before it is visually polished. A page that cannot scroll, clips bottom content, or traps the user above hidden content is non-compliant even if the first viewport looks close to the approved image.
+
+Main-agent scaffold requirements:
+
+- provide a right-side page switcher listing every non-deferred required route;
+- route switcher buttons must navigate to the corresponding route and show the active page;
+- the switcher must be outside the replicated page frame or excluded from visual parity screenshots;
+- each route must have a defined scroll container contract;
+- do not set `overflow: hidden` on `body`, root, or page containers unless an inner, tested scroll container handles all page scrolling;
+- fixed headers, bottom navs, and floating controls must not cover final content.
+
+Each page worker must verify:
+
+- wheel/trackpad scroll changes scroll position when content exceeds the viewport;
+- touch-style scrolling works where browser tooling can simulate it;
+- the last meaningful content row/card/button is reachable;
+- bottom navigation or fixed call-to-action areas do not hide content;
+- scroll restoration or page switching does not leave the page in a broken scroll position.
+
+The main agent must write `prototype/qa/react-usability-audit.json`:
+
+```json
+{
+  "passed": true,
+  "right_side_page_menu_present": true,
+  "page_menu_position": "right",
+  "page_menu_outside_replica_frame": true,
+  "page_menu_covers_all_routes": true,
+  "page_menu_route_switching_passed": true,
+  "page_menu_does_not_affect_visual_parity": true,
+  "scroll_behavior_passed": true,
+  "all_scrollable_pages_verified": true,
+  "no_page_scroll_locked": true,
+  "fixed_navigation_does_not_hide_content": true,
+  "page_scroll_results": [
+    {
+      "page_id": "",
+      "route": "",
+      "expected_scrollable": true,
+      "wheel_scroll_passed": true,
+      "touch_scroll_passed": true,
+      "bottom_content_reachable": true,
+      "content_not_clipped": true,
+      "fixed_ui_not_obscuring_content": true,
+      "notes": ""
+    }
+  ],
+  "hard_failures": []
+}
+```
+
+Do not mark React complete when any required page has inaccessible lower content, when wheel/touch scrolling is broken, or when the route switcher cannot navigate to every required page.
 
 ## Page Visual Decomposition Gate
 
@@ -333,7 +401,7 @@ Before visual parity scoring, require:
 - `prototype/qa/react-worker-result.json` exists and has `passed: true`;
 - `implementation_type` is `component_frontend`;
 - `screenshot_or_hotspot_demo` is `false`;
-- `main_agent_scaffold_passed`, `style_system_locked`, `page_workers_started_after_scaffold`, and `page_workers_used_shared_scaffold` are `true`;
+- `main_agent_scaffold_passed`, `style_system_locked`, `page_workers_started_after_scaffold`, `page_workers_used_shared_scaffold`, `demo_page_switcher_passed`, and `scroll_behavior_passed` are `true`;
 - `all_required_routes_implemented`, `all_declared_interactions_implemented`, `source_requirements_aligned`, `structured_design_doc_aligned`, and `approved_images_replicated` are all `true`;
 - `max_active_subagents` is present and is no greater than `6`;
 - `global_navigation_passed` and `cross_page_state_passed` are `true`;
@@ -341,6 +409,7 @@ Before visual parity scoring, require:
 - `prototype/qa/react-page-worker-registry.json` exists, has `passed: true`, and registers every required page worker;
 - every registered page worker has passing `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json`;
 - `prototype/qa/react-navigation-audit.json` exists, has `passed: true`, and verifies global navigation plus cross-page state;
+- `prototype/qa/react-usability-audit.json` exists, has `passed: true`, verifies the right-side page switcher, and includes a passing scroll result for every required page;
 - `page_worker_results` contains one passing result for every non-deferred required page;
 - `prototype/qa/react-interaction-audit.json` exists and has `passed: true`;
 - every required page has a passing interaction audit entry;
@@ -369,6 +438,7 @@ The comparison may be manual, model-assisted, or script-assisted, but the report
 - visible copy in the wrong language;
 - layout overlap or unreadable text.
 - broken primary interactions, dead navigation targets, or unreachable declared states.
+- broken scroll behavior, clipped bottom content, or a missing/broken right-side page switcher.
 
 Do not mark Final Functional Audit as passed until visual parity is passed or every failure is explicitly blocked with a reason.
 
@@ -384,6 +454,7 @@ Before final response:
 - Confirm every linked approved AI reference image exists.
 - Confirm `prototype/prototype-data-report.json` exists and route count covers all non-deferred required pages.
 - Confirm `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json` exist and pass.
+- Confirm `prototype/qa/react-usability-audit.json` exists, passes, covers every required route, and verifies page menu navigation plus scroll behavior.
 - Run `npm install` if dependencies are missing.
 - Run `npm run build` when feasible.
 - Run the React app locally and inspect routes/interactions when browser tools are available.

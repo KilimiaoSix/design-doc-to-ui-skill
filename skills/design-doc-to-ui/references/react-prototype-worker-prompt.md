@@ -52,6 +52,7 @@ Task:
 6. Implement and verify page-local interactions:
    - primary and secondary buttons on the assigned page;
    - forms, inputs, uploads/selectors, tabs/segmented controls, toggles, dialogs, toasts, loading states, success/error/empty/blocked/quota states declared for this page;
+   - wheel/trackpad scrolling, touch-style scrolling when feasible, bottom-content reachability, and fixed UI not obscuring content;
    - page-local route intents such as "go to detail", "back", "retry", or "continue" by emitting the expected route target contract for the main agent.
 7. Run the prototype locally when feasible, inspect the assigned route, and exercise all assigned interactions.
 8. Repair until the assigned page behaves like a coherent production page and visually matches the approved image, or explicitly mark an infeasible blocker.
@@ -87,6 +88,12 @@ worker-result.json:
   "structured_design_doc_aligned": true,
   "approved_image_replicated": true,
   "page_interactions_verified": true,
+  "scroll_behavior_verified": true,
+  "wheel_scroll_passed": true,
+  "touch_scroll_passed": true,
+  "bottom_content_reachable": true,
+  "content_not_clipped": true,
+  "fixed_ui_not_obscuring_content": true,
   "declared_states_reachable": true,
   "outbound_route_targets_recorded": true,
   "dev_server_verified": true,
@@ -158,6 +165,12 @@ interaction-audit.json:
   "page_id": "",
   "route": "",
   "route_reachable": true,
+  "scroll_behavior_passed": true,
+  "wheel_scroll_passed": true,
+  "touch_scroll_passed": true,
+  "bottom_content_reachable": true,
+  "content_not_clipped": true,
+  "fixed_ui_not_obscuring_content": true,
   "primary_actions_passed": true,
   "declared_states_reachable": true,
   "forms_and_controls_passed": true,
@@ -174,7 +187,7 @@ interaction-audit.json:
   "hard_failures": []
 }
 
-Do not mark passed when the assigned route is implemented mainly by placing a full-page image, when visible controls are fake, when page-local primary actions are dead, when declared states are unreachable, when outbound route targets are missing, when visible approved-image elements are absent, when a custom structure is simplified into a generic grid/list/card, or when behavior contradicts the source requirements or structured design document.
+Do not mark passed when the assigned route is implemented mainly by placing a full-page image, when visible controls are fake, when page-local primary actions are dead, when declared states are unreachable, when page scrolling is broken, when bottom content is clipped or unreachable, when outbound route targets are missing, when visible approved-image elements are absent, when a custom structure is simplified into a generic grid/list/card, or when behavior contradicts the source requirements or structured design document.
 ```
 
 ## Main-Agent Aggregate Contract
@@ -185,6 +198,7 @@ After all page workers finish, the main agent integrates shared app shell, routi
 - `prototype/qa/react-interaction-audit.json`
 - `prototype/qa/react-page-worker-registry.json`
 - `prototype/qa/react-navigation-audit.json`
+- `prototype/qa/react-usability-audit.json`
 
 The aggregate result must include:
 
@@ -204,6 +218,8 @@ The aggregate result must include:
   "all_declared_interactions_implemented": true,
   "global_navigation_passed": true,
   "cross_page_state_passed": true,
+  "demo_page_switcher_passed": true,
+  "scroll_behavior_passed": true,
   "page_worker_results": [
     {
       "page_id": "",
@@ -220,6 +236,25 @@ The aggregate result must include:
 }
 ```
 
-The aggregate interaction audit must include `global_navigation_passed: true`, one passing page result per required page, and passing `cross_page_flow_results` for the whole product flow.
+The aggregate interaction audit must include `global_navigation_passed: true`, `scroll_behavior_passed: true`, one passing page result per required page, and passing `cross_page_flow_results` for the whole product flow.
+
+The aggregate usability audit must include:
+
+```json
+{
+  "passed": true,
+  "right_side_page_menu_present": true,
+  "page_menu_position": "right",
+  "page_menu_outside_replica_frame": true,
+  "page_menu_covers_all_routes": true,
+  "page_menu_route_switching_passed": true,
+  "page_menu_does_not_affect_visual_parity": true,
+  "scroll_behavior_passed": true,
+  "all_scrollable_pages_verified": true,
+  "no_page_scroll_locked": true,
+  "fixed_navigation_does_not_hide_content": true,
+  "page_scroll_results": []
+}
+```
 
 If the React worker cannot run Node/npm, cannot start the dev server, or cannot inspect routes, it must mark the exact capability as blocked instead of claiming the page or prototype is complete.

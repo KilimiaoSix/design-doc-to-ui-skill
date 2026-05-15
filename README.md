@@ -48,6 +48,7 @@ If a required companion skill is missing or unreadable, that delivery stage is b
 - React and Figma work starts only after design images, main audit, and structured design document are complete.
 - React output is a component-level Vite project, not an image viewer. The main agent must first create the app shell, route registry, style system, page slots, and worker ownership map.
 - React page workers must produce `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json` before registration in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.
+- React demo usability is gated by `prototype/qa/react-usability-audit.json`: every page must be scrollable when content exceeds the viewport, bottom content must be reachable, and a right-side page switcher must navigate to every required route without affecting visual parity screenshots.
 - Figma output must start from `qa/figma-scaffold-audit.json`, register page workers in `qa/figma-page-worker-registry.json`, and pass `qa/figma-prototype-link-plan.json` plus `qa/figma-integration-audit.json`.
 - React and Figma visual parity are judged per page. Average score cannot hide a failed page.
 - Final docs, React metadata, and optional Feishu/Figma outputs follow the user's request language.
@@ -173,7 +174,7 @@ Representative regression checks:
 - `validate_design_run.py --phase design-completion` returns `react_allowed=false` before design artifacts and docs exist.
 - With mock worker artifacts, locked style contract, main audit, and structured design doc, the design-completion gate passes.
 - `build_prototype_data.py --template react --copy-template` creates a runnable React project with all required routes.
-- Missing React scaffold audit, React page visual decomposition, React DOM inventory, React page visual replica audit, React page worker registry, React navigation audit, Figma scaffold audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
+- Missing React scaffold audit, React page visual decomposition, React DOM inventory, React page visual replica audit, React page worker registry, React navigation audit, React usability audit, Figma scaffold audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
 
 ## Notes
 

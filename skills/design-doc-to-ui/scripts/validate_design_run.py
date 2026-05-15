@@ -402,6 +402,11 @@ def validate_react_scaffold(run_dir: Path, manifest: dict[str, Any], blockers: l
         "route_registry_created",
         "style_system_locked",
         "page_slots_created",
+        "demo_route_switcher_created",
+        "route_switcher_covers_all_pages",
+        "route_switcher_outside_replica_frame",
+        "scroll_container_contract_created",
+        "body_or_page_scroll_not_blocked",
         "worker_ownership_map_created",
         "shared_navigation_contract_created",
     ]:
@@ -464,6 +469,56 @@ def validate_react_navigation_audit(run_dir: Path, manifest: dict[str, Any], blo
             continue
         if item.get("passed") is not True:
             add(blockers, "REACT_NAVIGATION_FLOW_NOT_PASSED", "React navigation flow did not pass.")
+
+
+def validate_react_usability_audit(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    required_ids = {str(page.get("page_id")) for page in required_pages(manifest)}
+    data, error = load_artifact_json(run_dir, manifest, "react_usability_audit")
+    if error:
+        add(blockers, "REACT_USABILITY_AUDIT_MISSING", error)
+        return
+    if data.get("passed") is not True:
+        add(blockers, "REACT_USABILITY_AUDIT_NOT_PASSED", "react-usability-audit.json is missing passed=true.")
+    for key in [
+        "right_side_page_menu_present",
+        "page_menu_outside_replica_frame",
+        "page_menu_covers_all_routes",
+        "page_menu_route_switching_passed",
+        "page_menu_does_not_affect_visual_parity",
+        "scroll_behavior_passed",
+        "all_scrollable_pages_verified",
+        "no_page_scroll_locked",
+        "fixed_navigation_does_not_hide_content",
+    ]:
+        if data.get(key) is not True:
+            add(blockers, "REACT_USABILITY_AUDIT_FIELD_MISSING", f"React usability audit missing or failed field: {key}.")
+    if str(data.get("page_menu_position") or "").lower() != "right":
+        add(blockers, "REACT_PAGE_MENU_POSITION_INVALID", "React demo page menu must be positioned on the right.")
+    if data.get("hard_failures"):
+        add(blockers, "REACT_USABILITY_HARD_FAILURES", "React usability audit contains hard failures.")
+    results = data.get("page_scroll_results") or []
+    if not isinstance(results, list):
+        add(blockers, "REACT_SCROLL_RESULTS_INVALID", "React usability audit page_scroll_results must be a list.")
+        return
+    seen_ids: set[str] = set()
+    for item in results:
+        if not isinstance(item, dict):
+            add(blockers, "REACT_SCROLL_RESULT_INVALID", "React scroll result entries must be objects.")
+            continue
+        page_id = str(item.get("page_id") or item.get("id") or "")
+        if page_id:
+            seen_ids.add(page_id)
+        for key in [
+            "wheel_scroll_passed",
+            "touch_scroll_passed",
+            "bottom_content_reachable",
+            "content_not_clipped",
+            "fixed_ui_not_obscuring_content",
+        ]:
+            if item.get(key) is not True:
+                add(blockers, "REACT_SCROLL_FIELD_FAILED", f"React scroll result failed field: {key}.", page_id or None)
+    for missing_page_id in sorted(required_ids - seen_ids):
+        add(blockers, "REACT_SCROLL_RESULT_PAGE_MISSING", "React usability audit missing required page scroll result.", missing_page_id)
 
 
 def validate_react_page_visual_artifacts(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
@@ -575,6 +630,7 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
     )
     validate_react_page_visual_artifacts(run_dir, manifest, blockers)
     validate_react_navigation_audit(run_dir, manifest, blockers)
+    validate_react_usability_audit(run_dir, manifest, blockers)
 
     result, error = load_artifact_json(run_dir, manifest, "react_worker_result")
     if error:
@@ -602,6 +658,8 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
         "page_workers_used_shared_scaffold",
         "global_navigation_passed",
         "cross_page_state_passed",
+        "demo_page_switcher_passed",
+        "scroll_behavior_passed",
     ]
     for key in required_flags:
         if result.get(key) is not True:
@@ -641,6 +699,12 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
             "all_visible_ai_elements_represented",
             "nonstandard_layouts_preserved",
             "no_unapproved_simplification",
+            "scroll_behavior_verified",
+            "wheel_scroll_passed",
+            "touch_scroll_passed",
+            "bottom_content_reachable",
+            "content_not_clipped",
+            "fixed_ui_not_obscuring_content",
             "page_interactions_verified",
             "declared_states_reachable",
             "outbound_route_targets_recorded",
@@ -660,6 +724,8 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
         add(blockers, "REACT_INTERACTION_AUDIT_NOT_PASSED", "react-interaction-audit.json is missing passed=true.")
     if audit.get("global_navigation_passed") is not True:
         add(blockers, "REACT_GLOBAL_NAVIGATION_NOT_PASSED", "React aggregate interaction audit must have global_navigation_passed=true.")
+    if audit.get("scroll_behavior_passed") is not True:
+        add(blockers, "REACT_SCROLL_BEHAVIOR_NOT_PASSED", "React aggregate interaction audit must have scroll_behavior_passed=true.")
     if audit.get("hard_failures"):
         add(blockers, "REACT_INTERACTION_HARD_FAILURES", "React interaction audit contains hard failures.")
     try:
@@ -679,6 +745,12 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
             seen_ids.add(page_id)
         for key in [
             "route_reachable",
+            "scroll_behavior_passed",
+            "wheel_scroll_passed",
+            "touch_scroll_passed",
+            "bottom_content_reachable",
+            "content_not_clipped",
+            "fixed_ui_not_obscuring_content",
             "primary_actions_passed",
             "declared_states_reachable",
             "forms_and_controls_passed",
