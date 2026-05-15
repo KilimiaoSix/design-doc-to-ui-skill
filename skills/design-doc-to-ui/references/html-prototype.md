@@ -42,6 +42,10 @@ prototype/
     react-worker-result.json
     react-interaction-audit.json
     react-page-workers/
+      <page_id>/
+        visual-decomposition.json
+        dom-element-inventory.json
+        visual-replica-audit.json
 ```
 
 Use `assets/react-prototype-template/` as the starting project when useful.
@@ -62,6 +66,9 @@ React prototype work must be managed through intermediate files, not only a fina
 - `prototype/qa/react-scaffold-audit.json`: main-agent scaffold, style system, route registry, page slots, and ownership map.
 - `prototype/qa/react-page-worker-registry.json`: main-thread registry of every React page worker result.
 - `prototype/qa/react-page-workers/<page_id>/worker-result.json`: page worker implementation result.
+- `prototype/qa/react-page-workers/<page_id>/visual-decomposition.json`: page worker's structured decomposition of the approved AI image before implementation.
+- `prototype/qa/react-page-workers/<page_id>/dom-element-inventory.json`: implemented DOM/component inventory mapped back to the visual decomposition.
+- `prototype/qa/react-page-workers/<page_id>/visual-replica-audit.json`: page-local screenshot-to-approved-image audit after implementation.
 - `prototype/qa/react-page-workers/<page_id>/interaction-audit.json`: page-local interaction audit.
 - `prototype/qa/react-page-workers/<page_id>/review.md`: page worker self-review and repair notes.
 - `prototype/qa/react-navigation-audit.json`: main-agent global navigation, route target, cross-page state, and recovery-flow audit.
@@ -77,6 +84,9 @@ python scripts/record_react_page_worker_result.py \
   --page-id <page_id> \
   --worker-result prototype/qa/react-page-workers/<page_id>/worker-result.json \
   --interaction-audit prototype/qa/react-page-workers/<page_id>/interaction-audit.json \
+  --visual-decomposition prototype/qa/react-page-workers/<page_id>/visual-decomposition.json \
+  --dom-inventory prototype/qa/react-page-workers/<page_id>/dom-element-inventory.json \
+  --visual-replica-audit prototype/qa/react-page-workers/<page_id>/visual-replica-audit.json \
   --review prototype/qa/react-page-workers/<page_id>/review.md
 ```
 
@@ -130,10 +140,13 @@ Each page worker must implement its assigned page as a real component-level fron
 
 - read the original requirements/source bundle, approved AI page images, page briefs, structured design document, style contract, worker reviews, main audit, and generated prototype data;
 - read `prototype/qa/react-scaffold-audit.json`, shared style tokens/CSS, route registry, and the worker ownership map;
+- before writing page UI code, create `visual-decomposition.json` from the approved AI image and list every visible section, card, control, icon group, illustration, decorative stroke, nav/status area, copy block, and nonstandard layout;
 - implement the assigned route/view from `prototype/src/prototype-data.js`;
 - work only inside the assigned page slot and owned files unless the main agent explicitly grants shared-file ownership;
 - follow the main-agent style system and page frame instead of redefining product-level visual direction;
 - implement page-local interactions according to the original requirements and structured design document, not only the visual image;
+- after implementation, create `dom-element-inventory.json` mapping every decomposed visual element to a React component, DOM node, CSS construction, SVG/vector, or isolated asset;
+- render the assigned route, compare it with the approved AI image, and create `visual-replica-audit.json` before claiming page completion;
 - test the assigned route and page-local interaction states locally;
 - record outbound route targets and shared state dependencies for main-agent integration;
 - repair visual and behavioral issues before returning;
@@ -150,6 +163,106 @@ After all page workers return, the main agent owns:
 Do not mark the React phase complete from the main thread alone. If React page SubAgent capability is technically unavailable, mark React prototype generation blocked. Do not replace required page workers with a quick main-thread implementation.
 
 React page workers must not edit `ui-run.json`, page briefs, design image worker outputs, unrelated routes, or unrelated files.
+
+## Page Visual Decomposition Gate
+
+The page worker must analyze the approved AI image before coding. This is not optional, because a React page can otherwise satisfy requirements while silently replacing the approved design with a generic layout.
+
+`visual-decomposition.json` must include:
+
+```json
+{
+  "passed": true,
+  "page_id": "",
+  "approved_image": "",
+  "approved_image_analyzed": true,
+  "all_major_regions_listed": true,
+  "all_visible_controls_listed": true,
+  "nonstandard_layouts_identified": true,
+  "must_not_simplify_rules_created": true,
+  "screen_regions": [
+    {
+      "region_id": "top-status-and-title",
+      "type": "status_bar|nav|filter_group|card|graph|task_list|bottom_nav|illustration|decorative",
+      "position": "top|middle|bottom",
+      "visual_notes": "",
+      "visible_copy": [],
+      "must_replicate": true
+    }
+  ],
+  "element_inventory": [
+    {
+      "element_id": "",
+      "region_id": "",
+      "kind": "text|button|chip|icon|card|divider|progress|avatar|illustration|connector|tab|task-row",
+      "visual_role": "",
+      "copy_or_icon": "",
+      "must_replicate": true
+    }
+  ],
+  "nonstandard_layouts": [
+    {
+      "layout_id": "",
+      "description": "",
+      "must_not_replace_with": "generic grid/list/card"
+    }
+  ],
+  "hard_failures": []
+}
+```
+
+For example, if the approved image contains a knowledge-tree graph with connectors, branch cards, icons, and playful marks, the React page must recreate that graph structure. Replacing it with a two-column button grid is a hard failure. If the approved image has top status chips, a progress mascot, a daily-task card, handwritten decorative lines, or a four-item bottom navigation, those visible elements must be represented unless a documented approved revision removes them.
+
+## DOM Inventory And Visual Replica Gate
+
+After coding, the page worker must map the implementation back to the image decomposition:
+
+```json
+{
+  "passed": true,
+  "page_id": "",
+  "all_required_sections_implemented": true,
+  "all_visible_controls_implemented": true,
+  "component_mapping_complete": true,
+  "no_unmapped_required_elements": true,
+  "mappings": [
+    {
+      "element_id": "",
+      "implemented_as": "React component / DOM / CSS / SVG / asset",
+      "file": "prototype/src/pages/Page.jsx",
+      "notes": ""
+    }
+  ],
+  "unmapped_required_elements": []
+}
+```
+
+Then render the route and write `visual-replica-audit.json`:
+
+```json
+{
+  "passed": true,
+  "page_id": "",
+  "route": "",
+  "visual_similarity_score": 0.9,
+  "visual_replica_passed": true,
+  "all_visible_ai_elements_represented": true,
+  "structural_layout_matched": true,
+  "copy_and_iconography_matched": true,
+  "nonstandard_layouts_preserved": true,
+  "no_unapproved_simplification": true,
+  "screenshot_path": "prototype/qa/react-page-workers/<page_id>/screenshots/route.png",
+  "approved_image": "",
+  "missing_visible_elements": [],
+  "simplified_structures": [],
+  "layout_drift": [],
+  "copy_mismatches": [],
+  "icon_or_asset_mismatches": [],
+  "hard_failures": []
+}
+```
+
+Do not mark the page worker passed when visible AI-image elements are missing, when a specific visual structure is converted into a generic grid/list/card, when icons/illustrations are replaced with unrelated placeholders, when bottom/top navigation changes structure, or when the rendered route visibly drifts from the approved page image.
 
 ## Runtime Setup
 
@@ -226,6 +339,7 @@ Before visual parity scoring, require:
 - `global_navigation_passed` and `cross_page_state_passed` are `true`;
 - `implemented_route_count` is at least the non-deferred required page count;
 - `prototype/qa/react-page-worker-registry.json` exists, has `passed: true`, and registers every required page worker;
+- every registered page worker has passing `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json`;
 - `prototype/qa/react-navigation-audit.json` exists, has `passed: true`, and verifies global navigation plus cross-page state;
 - `page_worker_results` contains one passing result for every non-deferred required page;
 - `prototype/qa/react-interaction-audit.json` exists and has `passed: true`;

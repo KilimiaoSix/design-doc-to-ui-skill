@@ -47,7 +47,7 @@ If a required companion skill is missing or unreadable, that delivery stage is b
 - At most 6 SubAgents may be active at the same time; larger runs are batched.
 - React and Figma work starts only after design images, main audit, and structured design document are complete.
 - React output is a component-level Vite project, not an image viewer. The main agent must first create the app shell, route registry, style system, page slots, and worker ownership map.
-- React page workers are registered in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.
+- React page workers must produce `visual-decomposition.json`, `dom-element-inventory.json`, and `visual-replica-audit.json` before registration in `prototype/qa/react-page-worker-registry.json`; the main agent must pass `react-navigation-audit.json` for global route targets, cross-page state, and whole-flow navigation.
 - Figma output must start from `qa/figma-scaffold-audit.json`, register page workers in `qa/figma-page-worker-registry.json`, and pass `qa/figma-prototype-link-plan.json` plus `qa/figma-integration-audit.json`.
 - React and Figma visual parity are judged per page. Average score cannot hide a failed page.
 - Final docs, React metadata, and optional Feishu/Figma outputs follow the user's request language.
@@ -148,7 +148,7 @@ python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/
 python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/minihire --require-all
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
 python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
-python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --review prototype/qa/react-page-workers/home/review.md
+python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --visual-decomposition prototype/qa/react-page-workers/home/visual-decomposition.json --dom-inventory prototype/qa/react-page-workers/home/dom-element-inventory.json --visual-replica-audit prototype/qa/react-page-workers/home/visual-replica-audit.json --review prototype/qa/react-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --review qa/figma-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
 ```
@@ -173,7 +173,7 @@ Representative regression checks:
 - `validate_design_run.py --phase design-completion` returns `react_allowed=false` before design artifacts and docs exist.
 - With mock worker artifacts, locked style contract, main audit, and structured design doc, the design-completion gate passes.
 - `build_prototype_data.py --template react --copy-template` creates a runnable React project with all required routes.
-- Missing React scaffold audit, React page worker registry, React navigation audit, Figma scaffold audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
+- Missing React scaffold audit, React page visual decomposition, React DOM inventory, React page visual replica audit, React page worker registry, React navigation audit, Figma scaffold audit, Figma page worker registry, Figma prototype link plan, Figma integration audit, companion skills, visual parity audit, Feishu audit, routes, page briefs, worker results, final images, or structured docs produce explicit blocker codes.
 
 ## Notes
 

@@ -45,7 +45,7 @@ skills/
 - 同时最多 6 个活跃 SubAgent；页面多时必须分批。
 - React 和 Figma 只能在设计图、主审计和结构化设计文档完成后开始。
 - React 默认输出 Vite 小前端项目，不能只是整页图片浏览器；主 agent 必须先创建 app shell、route registry、style system、page slots 和 worker ownership map。
-- React 页面 worker 必须登记到 `prototype/qa/react-page-worker-registry.json`；主 agent 必须通过 `react-navigation-audit.json` 验证全局路由、跨页状态和完整跳转流。
+- React 页面 worker 必须先产出 `visual-decomposition.json`、`dom-element-inventory.json`、`visual-replica-audit.json`，再登记到 `prototype/qa/react-page-worker-registry.json`；主 agent 必须通过 `react-navigation-audit.json` 验证全局路由、跨页状态和完整跳转流。
 - Figma 必须先通过 `qa/figma-scaffold-audit.json`，页面 worker 必须登记到 `qa/figma-page-worker-registry.json`，并通过 `qa/figma-prototype-link-plan.json` 与 `qa/figma-integration-audit.json`。
 - React/Figma 复刻按逐页分数判断，单页低于 `0.80` 即失败。
 - 最终文档、React 元数据、飞书/Figma 输出都跟随用户请求语言。
@@ -131,7 +131,7 @@ python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/
 python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/minihire --require-all
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase design-completion
 python skills/design-doc-to-ui/scripts/build_prototype_data.py --run-dir out/minihire --template react --copy-template
-python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --review prototype/qa/react-page-workers/home/review.md
+python skills/design-doc-to-ui/scripts/record_react_page_worker_result.py --run-dir out/minihire --page-id home --worker-result prototype/qa/react-page-workers/home/worker-result.json --interaction-audit prototype/qa/react-page-workers/home/interaction-audit.json --visual-decomposition prototype/qa/react-page-workers/home/visual-decomposition.json --dom-inventory prototype/qa/react-page-workers/home/dom-element-inventory.json --visual-replica-audit prototype/qa/react-page-workers/home/visual-replica-audit.json --review prototype/qa/react-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/record_figma_page_worker_result.py --run-dir out/minihire --page-id home --worker-result qa/figma-page-workers/home/worker-result.json --frame-audit qa/figma-page-workers/home/frame-audit.json --review qa/figma-page-workers/home/review.md
 python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/minihire --phase delivery
 ```
@@ -178,7 +178,7 @@ python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/de
 - 设计图、worker 结果、主审计和结构化文档不完整时，`validate_design_run.py --phase design-completion` 返回 `react_allowed=false`；
 - 补齐 mock worker 产物、锁定风格、主审计和结构化设计文档后，design-completion gate 通过；
 - `build_prototype_data.py --template react --copy-template` 生成包含全部 required route 的 React 项目；
-- 缺 React scaffold audit、React 页面 worker registry、React navigation audit、Figma scaffold audit、Figma 页面 worker registry、Figma prototype link plan、Figma integration audit、companion、视觉审计、飞书审计、route、page brief、worker-result、final image、结构化文档都会输出明确 blocker code。
+- 缺 React scaffold audit、React 页面视觉拆解、React DOM 映射、React 页面视觉复刻审计、React 页面 worker registry、React navigation audit、Figma scaffold audit、Figma 页面 worker registry、Figma prototype link plan、Figma integration audit、companion、视觉审计、飞书审计、route、page brief、worker-result、final image、结构化文档都会输出明确 blocker code。
 
 ## 仓库说明
 

@@ -33,24 +33,35 @@ Inputs:
 
 Task:
 1. Read the source requirements, structured design document, assigned page brief, approved UI image, and prototype data before editing.
-2. Build or repair the assigned route as a formal React page inside the main-agent scaffold:
+2. Before coding, decompose the approved AI image into `visual-decomposition.json`:
+   - list every visible region, card, control, progress indicator, chip, task row, icon, illustration/mascot, decorative stroke, connector, top navigation/status area, and bottom navigation item;
+   - identify nonstandard structures that must not be simplified, such as tree/graph layouts, timeline connectors, hand-drawn marks, mascot callouts, circular progress cards, or custom tab/filter groups;
+   - write explicit "must not simplify" rules for this page.
+3. Build or repair the assigned route as a formal React page inside the main-agent scaffold:
    - implement page UI as React components, not a full-screen screenshot or image hotspot map;
    - keep the approved image only as a visual reference, thumbnail, audit attachment, or cropped decorative asset when needed;
    - preserve the assigned route identity from prototype/src/prototype-data.js;
    - use the shared shell, route contract, CSS variables/tokens, typography, spacing scale, and component conventions created by the main agent;
    - do not create a competing global layout, router, style reset, or independent design system;
    - replicate the approved AI image as the visual contract for layout, typography, colors, density, controls, and page-local states;
+   - recreate specific visual structures rather than replacing them with generic equivalents;
+   - preserve top/bottom navigation structure, visible chips/filters, card sequence, decorative motifs, icon language, and illustrations unless an approved revision explicitly removes them;
    - implement interactions according to the source requirements and structured design document.
-3. Implement and verify page-local interactions:
+4. Create `dom-element-inventory.json` after coding, mapping every required visual element from `visual-decomposition.json` to its implemented React component, DOM element, CSS construction, SVG/vector, or isolated asset.
+5. Render the route and create `visual-replica-audit.json` by comparing the route screenshot with the approved AI image. Repair until structural simplification, missing visible elements, copy mismatches, icon/asset mismatches, and major layout drift are gone.
+6. Implement and verify page-local interactions:
    - primary and secondary buttons on the assigned page;
    - forms, inputs, uploads/selectors, tabs/segmented controls, toggles, dialogs, toasts, loading states, success/error/empty/blocked/quota states declared for this page;
    - page-local route intents such as "go to detail", "back", "retry", or "continue" by emitting the expected route target contract for the main agent.
-4. Run the prototype locally when feasible, inspect the assigned route, and exercise all assigned interactions.
-5. Repair until the assigned page behaves like a coherent production page, or explicitly mark an infeasible blocker.
-6. Record every outbound route target and any shared state dependency so the main agent can validate whole-app navigation.
+7. Run the prototype locally when feasible, inspect the assigned route, and exercise all assigned interactions.
+8. Repair until the assigned page behaves like a coherent production page and visually matches the approved image, or explicitly mark an infeasible blocker.
+9. Record every outbound route target and any shared state dependency so the main agent can validate whole-app navigation.
 
 Write these files:
 - prototype/qa/react-page-workers/<page_id>/worker-result.json
+- prototype/qa/react-page-workers/<page_id>/visual-decomposition.json
+- prototype/qa/react-page-workers/<page_id>/dom-element-inventory.json
+- prototype/qa/react-page-workers/<page_id>/visual-replica-audit.json
 - prototype/qa/react-page-workers/<page_id>/interaction-audit.json
 - prototype/qa/react-page-workers/<page_id>/review.md
 - route screenshots or inspection evidence under prototype/qa/react-page-workers/<page_id>/screenshots/ when feasible
@@ -66,6 +77,12 @@ worker-result.json:
   "main_scaffold_used": true,
   "style_system_followed": true,
   "owned_page_slot_used": true,
+  "visual_decomposition_completed": true,
+  "dom_inventory_matches_design": true,
+  "visual_replica_audit_passed": true,
+  "all_visible_ai_elements_represented": true,
+  "nonstandard_layouts_preserved": true,
+  "no_unapproved_simplification": true,
   "source_requirements_aligned": true,
   "structured_design_doc_aligned": true,
   "approved_image_replicated": true,
@@ -85,6 +102,54 @@ worker-result.json:
   "shared_state_requirements": [],
   "unresolved_blockers": [],
   "changed_files": []
+}
+
+visual-decomposition.json:
+{
+  "passed": true,
+  "page_id": "",
+  "approved_image": "",
+  "approved_image_analyzed": true,
+  "all_major_regions_listed": true,
+  "all_visible_controls_listed": true,
+  "nonstandard_layouts_identified": true,
+  "must_not_simplify_rules_created": true,
+  "screen_regions": [],
+  "element_inventory": [],
+  "nonstandard_layouts": [],
+  "hard_failures": []
+}
+
+dom-element-inventory.json:
+{
+  "passed": true,
+  "page_id": "",
+  "all_required_sections_implemented": true,
+  "all_visible_controls_implemented": true,
+  "component_mapping_complete": true,
+  "no_unmapped_required_elements": true,
+  "mappings": [],
+  "unmapped_required_elements": []
+}
+
+visual-replica-audit.json:
+{
+  "passed": true,
+  "page_id": "",
+  "route": "",
+  "visual_similarity_score": 0.9,
+  "visual_replica_passed": true,
+  "all_visible_ai_elements_represented": true,
+  "structural_layout_matched": true,
+  "copy_and_iconography_matched": true,
+  "nonstandard_layouts_preserved": true,
+  "no_unapproved_simplification": true,
+  "missing_visible_elements": [],
+  "simplified_structures": [],
+  "layout_drift": [],
+  "copy_mismatches": [],
+  "icon_or_asset_mismatches": [],
+  "hard_failures": []
 }
 
 interaction-audit.json:
@@ -109,7 +174,7 @@ interaction-audit.json:
   "hard_failures": []
 }
 
-Do not mark passed when the assigned route is implemented mainly by placing a full-page image, when visible controls are fake, when page-local primary actions are dead, when declared states are unreachable, when outbound route targets are missing, or when behavior contradicts the source requirements or structured design document.
+Do not mark passed when the assigned route is implemented mainly by placing a full-page image, when visible controls are fake, when page-local primary actions are dead, when declared states are unreachable, when outbound route targets are missing, when visible approved-image elements are absent, when a custom structure is simplified into a generic grid/list/card, or when behavior contradicts the source requirements or structured design document.
 ```
 
 ## Main-Agent Aggregate Contract
@@ -145,6 +210,9 @@ The aggregate result must include:
       "route": "",
       "passed": true,
       "worker_result": "prototype/qa/react-page-workers/<page_id>/worker-result.json",
+      "visual_decomposition": "prototype/qa/react-page-workers/<page_id>/visual-decomposition.json",
+      "dom_inventory": "prototype/qa/react-page-workers/<page_id>/dom-element-inventory.json",
+      "visual_replica_audit": "prototype/qa/react-page-workers/<page_id>/visual-replica-audit.json",
       "interaction_audit": "prototype/qa/react-page-workers/<page_id>/interaction-audit.json"
     }
   ],

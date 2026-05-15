@@ -50,6 +50,9 @@ def main() -> int:
     parser.add_argument("--page-id", required=True)
     parser.add_argument("--worker-result", required=True)
     parser.add_argument("--interaction-audit", required=True)
+    parser.add_argument("--visual-decomposition", help="visual-decomposition.json path. Defaults to worker-result directory.")
+    parser.add_argument("--dom-inventory", help="dom-element-inventory.json path. Defaults to worker-result directory.")
+    parser.add_argument("--visual-replica-audit", help="visual-replica-audit.json path. Defaults to worker-result directory.")
     parser.add_argument("--review", required=True)
     parser.add_argument("--status", help="Override worker status.")
     args = parser.parse_args()
@@ -60,16 +63,38 @@ def main() -> int:
 
     worker_result = require_file("worker-result.json", Path(args.worker_result), run_dir)
     interaction_audit = require_file("interaction-audit.json", Path(args.interaction_audit), run_dir)
+    default_dir = worker_result.parent
+    visual_decomposition = require_file(
+        "visual-decomposition.json",
+        Path(args.visual_decomposition) if args.visual_decomposition else default_dir / "visual-decomposition.json",
+        run_dir,
+    )
+    dom_inventory = require_file(
+        "dom-element-inventory.json",
+        Path(args.dom_inventory) if args.dom_inventory else default_dir / "dom-element-inventory.json",
+        run_dir,
+    )
+    visual_replica_audit = require_file(
+        "visual-replica-audit.json",
+        Path(args.visual_replica_audit) if args.visual_replica_audit else default_dir / "visual-replica-audit.json",
+        run_dir,
+    )
     review = require_file("review.md", Path(args.review), run_dir)
 
     result_json = load_json(worker_result)
     audit_json = load_json(interaction_audit)
+    visual_decomposition_json = load_json(visual_decomposition)
+    dom_inventory_json = load_json(dom_inventory)
+    visual_replica_json = load_json(visual_replica_audit)
     status = args.status or result_json.get("status") or ("passed" if result_json.get("passed") is True else "unknown")
-    passed = result_json.get("passed") is True and audit_json.get("passed") is True and str(status).lower() in {
-        "passed",
-        "pass",
-        "approved",
-    }
+    passed = (
+        result_json.get("passed") is True
+        and audit_json.get("passed") is True
+        and visual_decomposition_json.get("passed") is True
+        and dom_inventory_json.get("passed") is True
+        and visual_replica_json.get("passed") is True
+        and str(status).lower() in {"passed", "pass", "approved"}
+    )
 
     path = registry_path(run_dir, manifest)
     registry = load_registry(path)
@@ -83,6 +108,9 @@ def main() -> int:
             "passed": passed,
             "worker_result": to_run_relative(run_dir, worker_result),
             "interaction_audit": to_run_relative(run_dir, interaction_audit),
+            "visual_decomposition": to_run_relative(run_dir, visual_decomposition),
+            "dom_inventory": to_run_relative(run_dir, dom_inventory),
+            "visual_replica_audit": to_run_relative(run_dir, visual_replica_audit),
             "review": to_run_relative(run_dir, review),
             "updated_at": now_iso(),
         }

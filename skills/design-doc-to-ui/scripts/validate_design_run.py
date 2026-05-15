@@ -466,6 +466,99 @@ def validate_react_navigation_audit(run_dir: Path, manifest: dict[str, Any], blo
             add(blockers, "REACT_NAVIGATION_FLOW_NOT_PASSED", "React navigation flow did not pass.")
 
 
+def validate_react_page_visual_artifacts(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    registry, error = load_artifact_json(run_dir, manifest, "react_page_worker_registry")
+    if error:
+        return
+    pages = registry.get("pages") or []
+    if not isinstance(pages, list):
+        return
+    threshold = float((manifest.get("prototype_policy") or {}).get("visual_similarity_threshold", 0.80))
+    for item in pages:
+        if not isinstance(item, dict):
+            continue
+        page_id = str(item.get("page_id") or "")
+        visual_decomposition = validate_referenced_worker_file(
+            run_dir,
+            item.get("visual_decomposition"),
+            blockers,
+            "REACT_VISUAL_DECOMPOSITION_MISSING",
+            "REACT_VISUAL_DECOMPOSITION_INVALID",
+            page_id or None,
+        )
+        if visual_decomposition:
+            for key in [
+                "approved_image_analyzed",
+                "all_major_regions_listed",
+                "all_visible_controls_listed",
+                "nonstandard_layouts_identified",
+                "must_not_simplify_rules_created",
+            ]:
+                if visual_decomposition.get(key) is not True:
+                    add(blockers, "REACT_VISUAL_DECOMPOSITION_FIELD_FAILED", f"React visual decomposition failed field: {key}.", page_id or None)
+            if not visual_decomposition.get("screen_regions"):
+                add(blockers, "REACT_VISUAL_DECOMPOSITION_REGIONS_EMPTY", "React visual decomposition has no screen_regions.", page_id or None)
+            if not visual_decomposition.get("element_inventory"):
+                add(blockers, "REACT_VISUAL_DECOMPOSITION_ELEMENTS_EMPTY", "React visual decomposition has no element_inventory.", page_id or None)
+            if visual_decomposition.get("hard_failures"):
+                add(blockers, "REACT_VISUAL_DECOMPOSITION_HARD_FAILURES", "React visual decomposition contains hard failures.", page_id or None)
+
+        dom_inventory = validate_referenced_worker_file(
+            run_dir,
+            item.get("dom_inventory"),
+            blockers,
+            "REACT_DOM_INVENTORY_MISSING",
+            "REACT_DOM_INVENTORY_INVALID",
+            page_id or None,
+        )
+        if dom_inventory:
+            for key in [
+                "all_required_sections_implemented",
+                "all_visible_controls_implemented",
+                "component_mapping_complete",
+                "no_unmapped_required_elements",
+            ]:
+                if dom_inventory.get(key) is not True:
+                    add(blockers, "REACT_DOM_INVENTORY_FIELD_FAILED", f"React DOM inventory failed field: {key}.", page_id or None)
+            if dom_inventory.get("unmapped_required_elements"):
+                add(blockers, "REACT_DOM_INVENTORY_UNMAPPED_ELEMENTS", "React DOM inventory has unmapped required elements.", page_id or None)
+
+        visual_audit = validate_referenced_worker_file(
+            run_dir,
+            item.get("visual_replica_audit"),
+            blockers,
+            "REACT_VISUAL_REPLICA_AUDIT_MISSING",
+            "REACT_VISUAL_REPLICA_AUDIT_INVALID",
+            page_id or None,
+        )
+        if visual_audit:
+            for key in [
+                "visual_replica_passed",
+                "all_visible_ai_elements_represented",
+                "structural_layout_matched",
+                "copy_and_iconography_matched",
+                "nonstandard_layouts_preserved",
+                "no_unapproved_simplification",
+            ]:
+                if visual_audit.get(key) is not True:
+                    add(blockers, "REACT_VISUAL_REPLICA_FIELD_FAILED", f"React visual replica audit failed field: {key}.", page_id or None)
+            score = score_value(visual_audit)
+            if score is None:
+                add(blockers, "REACT_VISUAL_REPLICA_SCORE_MISSING", "React visual replica audit missing visual_similarity_score.", page_id or None)
+            elif score < threshold:
+                add(blockers, "REACT_VISUAL_REPLICA_SCORE_LOW", f"React visual replica score {score:.2f} is below {threshold:.2f}.", page_id or None)
+            for key in [
+                "missing_visible_elements",
+                "simplified_structures",
+                "layout_drift",
+                "copy_mismatches",
+                "icon_or_asset_mismatches",
+                "hard_failures",
+            ]:
+                if visual_audit.get(key):
+                    add(blockers, "REACT_VISUAL_REPLICA_UNRESOLVED_DIFFS", f"React visual replica audit has unresolved {key}.", page_id or None)
+
+
 def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
     required_ids = {str(page.get("page_id")) for page in required_pages(manifest)}
     required_count = len(required_ids)
@@ -478,8 +571,9 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
         required_ids,
         blockers,
         "REACT",
-        ["worker_result", "interaction_audit", "review"],
+        ["worker_result", "interaction_audit", "visual_decomposition", "dom_inventory", "visual_replica_audit", "review"],
     )
+    validate_react_page_visual_artifacts(run_dir, manifest, blockers)
     validate_react_navigation_audit(run_dir, manifest, blockers)
 
     result, error = load_artifact_json(run_dir, manifest, "react_worker_result")
@@ -527,7 +621,7 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
         required_ids,
         blockers,
         "REACT",
-        ["worker_result", "interaction_audit"],
+        ["worker_result", "interaction_audit", "visual_decomposition", "dom_inventory", "visual_replica_audit"],
     )
     for payload in page_worker_payloads:
         page_id = str(payload.get("page_id") or "")
@@ -541,6 +635,12 @@ def validate_react_worker(run_dir: Path, manifest: dict[str, Any], blockers: lis
             "main_scaffold_used",
             "style_system_followed",
             "owned_page_slot_used",
+            "visual_decomposition_completed",
+            "dom_inventory_matches_design",
+            "visual_replica_audit_passed",
+            "all_visible_ai_elements_represented",
+            "nonstandard_layouts_preserved",
+            "no_unapproved_simplification",
             "page_interactions_verified",
             "declared_states_reachable",
             "outbound_route_targets_recorded",
