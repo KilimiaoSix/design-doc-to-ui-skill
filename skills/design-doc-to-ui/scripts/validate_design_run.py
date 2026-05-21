@@ -296,6 +296,19 @@ def validate_stage_approval(run_dir: Path, manifest: dict[str, Any], key: str, l
 
 
 def validate_required_stage_approvals(run_dir: Path, manifest: dict[str, Any], blockers: list[dict[str, Any]]) -> None:
+    if (manifest.get("workflow") or {}).get("concept_expansion_required"):
+        path = resolve_run_path(run_dir, (manifest.get("artifacts") or {}).get("expanded_product_brief"))
+        if not path or not path.exists() or path.stat().st_size == 0:
+            add(blockers, "EXPANDED_PRODUCT_BRIEF_MISSING", "Fuzzy-source runs must write source/expanded-product-brief.md before design completion.")
+        else:
+            validate_text_artifact_quality(
+                path,
+                blockers,
+                "EXPANDED_PRODUCT_BRIEF_GARBLED_TEXT",
+                "Expanded product brief contains mojibake or question-mark replacement runs.",
+            )
+        validate_stage_approval(run_dir, manifest, "stage_approval_product_concept", "expanded product concept brief", blockers)
+
     required = [
         ("stage_approval_style", "style direction and visual principles"),
         ("stage_approval_interaction_design", "interaction design and page briefs"),

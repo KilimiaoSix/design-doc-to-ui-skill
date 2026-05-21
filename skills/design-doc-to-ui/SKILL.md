@@ -1,12 +1,14 @@
 ---
 name: design-doc-to-ui
-description: "Convert PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into checkpointed UI design packages with source-backed page inventory, style/interaction design approvals, imagegen UI images, review-grade structured design docs, optional Feishu rich documents with remote-link content verification, dedicated SubAgent-built runnable React prototypes, optional Figma replicas, user-feedback revisions, and 80% visual parity gates. Use when Codex needs page coverage, SubAgent image generation/review, user-approved stage gates, formal React demo implementation and interaction verification, React visual parity, Feishu design docs, or Figma output. Requires direct SubAgent delegation, mandatory user approval checkpoints, and companion skills for Feishu, Figma, and visual audit stages."
+description: "Convert vague product ideas, rough user needs, PRDs, design docs, Feishu/Lark docs, Markdown specs, prototypes, wireframes, screenshots, and brand assets into checkpointed UI design packages with concept expansion, source-backed page inventory, style/interaction design approvals, optional low/mid-fidelity interaction concept demos, imagegen UI images, review-grade structured design docs, optional Feishu rich documents with remote-link content verification, dedicated SubAgent-built runnable React prototypes, optional Figma replicas, user-feedback revisions, and 80% visual parity gates. Use when Codex needs to discuss and expand ambiguous requirements before UI design, produce interaction/visual concepts, create design documentation, generate UI visual images, build React prototypes, audit visual parity, deliver Feishu design docs, or create Figma output. Requires direct SubAgent delegation, mandatory user approval checkpoints, and companion skills for Feishu, Figma, and visual audit stages."
 ---
 
 # Design Doc To UI
 
-Use this skill to turn a source product/design document into an approved UI design package. The required package contains:
+Use this skill to turn a vague product idea or a source product/design document into an approved UI design package. When the input is vague, first expand it through conversation into a product concept brief before treating it as a source document. The required package contains:
 
+- an expanded product concept brief when the user starts from a rough idea, vague requirement, or exploratory conversation;
+- interaction and visual concept artifacts, and when useful a low/mid-fidelity clickable interaction demo, before detailed UI image generation;
 - a structured design document in the requested language, with design thinking, page linkage, and imagegen-generated page images for every required page;
 - a runnable React frontend prototype project that visually recreates the approved AI page images and adds the declared interactions.
 
@@ -23,6 +25,7 @@ Before advancing to the next major stage, present the current artifact paths, su
 
 Required checkpoint artifacts:
 
+- `qa/stage-approval-product-concept.json`: only when the run starts from a vague idea or rough requirement, after the expanded product concept brief is ready.
 - `qa/stage-approval-style.json`: after style principles, style directions, and style samples are ready.
 - `qa/stage-approval-interaction-design.json`: after page inventory, page briefs, route map, state model, and intermediate interaction design file are ready.
 - `qa/stage-approval-ai-design-images.json`: after all imagegen page designs pass SubAgent review and main-agent audit.
@@ -33,31 +36,32 @@ Each approval JSON must include `passed: true`, `user_approved: true`, a real no
 
 ## Required Workflow
 
-1. Ingest the source document and assets.
-2. Produce an `app_requirements_summary` with `source_language`, `requested_output_language`, and `page_inventory`.
-3. Initialize a scripted run manifest with `scripts/prepare_ui_run.py`; `ui-run.json` becomes the single source of truth for page count, artifacts, and gates.
-4. Run the SubAgent Direct-Use Gate.
-5. Run the Style Exploration Gate before page generation. Present style directions and samples, then stop for user approval. Write `qa/stage-approval-style.json` only after the user approves.
-6. Run the Page Coverage Gate against `ui-run.json`.
-7. Create one page brief for every required page, plus an intermediate interaction design file covering routes, task flows, state/error strategy, and page linkage. Present these artifacts and stop for user approval. Write `qa/stage-approval-interaction-design.json` only after approval.
-8. Use `scripts/ui_job_status.py` to plan page worker batches of at most 6 active SubAgents.
-9. Run one page-level SubAgent for each required page to generate the UI image with the available image generation tool and complete page calibration/review.
-10. After each page worker returns, use `scripts/record_ui_worker_result.py` from the main thread to register its artifacts in `ui-run.json`.
-11. Run the Per-Page SubAgent Gate.
-12. Perform the main-agent audit across all pages. Present approved AI page images and audit notes to the user, then stop for approval. Write `qa/stage-approval-ai-design-images.json` only after the user approves.
-13. Generate a clean structured product design document in `requested_output_language`; it must pass the Structured Design Document Quality Gate and explain the design problem, users, scope, source traceability, user stories, acceptance criteria, design rationale, page linkage, interaction/state matrices, component tokens, content/data model, accessibility, design acceptance, and revision history. Do not include delivery links, worker evidence, audit results, run commands, visual parity scores, or React/Figma/Feishu delivery acceptance in the design document.
-14. Write `qa/structured-design-doc-audit.json`, present the local structured design document to the user, and stop for approval. Write `qa/stage-approval-design-doc.json` only after the user approves.
-15. If Feishu/Lark delivery is requested, use `design-doc-to-ui-feishu-doc` now: create/update the rich document, fetch the published Feishu link back, verify the remote linked content was updated successfully and has no mojibake/stale content, write both `qa/feishu-doc-audit.json` and `qa/feishu-doc-content-audit.json`, then stop for user approval of the Feishu link. Write `qa/stage-approval-feishu-doc.json` only after approval.
-16. Run `scripts/validate_design_run.py --phase design-completion`; React/Figma remains blocked unless this passes with `react_allowed: true`. When Feishu is requested, this gate also requires Feishu remote content verification and user approval.
-17. Run the Companion Skill Gate for visual audit, then generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`.
-18. In the main thread, create the React scaffold first: app shell, route registry, shared layout, style tokens/CSS, base components, right-side page switcher, scroll container contract, page slots, and page-worker ownership map. Write passing `prototype/qa/react-scaffold-audit.json` before starting React page workers.
-19. Start one page-level React Prototype SubAgent per required page using `references/react-prototype-worker-prompt.md`, batching with at most 6 active SubAgents. Each page worker must build its assigned route inside the main-agent scaffold, follow the shared style system, self-review page-local interactions, and write page-level QA before returning.
-20. Integrate the React app in the main thread: shared shell adjustments, route targets, cross-page state, and whole-product jump logic. Run the React Prototype Worker Gate: require the scaffold audit, every page worker result, plus aggregate `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json` to pass, including `global_navigation_passed: true`. Screenshot/hotspot/image-browser demos are non-compliant.
-21. Run the React Visual Parity Gate with `design-doc-to-ui-visual-audit`: render every required route, compare screenshots to approved AI page images, and repair until every page is at least 80% similar.
-22. Optionally create/update Figma only when requested; this stage must use `design-doc-to-ui-figma-replica`, start one page-level Figma Replica SubAgent per required page with at most 6 active SubAgents, then have the main agent wire global prototype links/cross-frame jumps and pass the editable-frame, frontend-handoff, asset-reconstruction, prototype-link, and 80% per-page replica gates.
-23. Run `scripts/validate_design_run.py --phase delivery` and perform the Final Functional Audit on React plus any requested Feishu/Figma outputs.
+1. Ingest the source document, rough user idea, conversation notes, and assets.
+2. If the input is vague, run the Fuzzy Requirement Expansion Gate: discuss the product goal with the user, propose assumptions instead of inventing hidden requirements, write `source/expanded-product-brief.md`, and stop for user approval before freezing scope. Write `qa/stage-approval-product-concept.json` only after approval.
+3. Produce an `app_requirements_summary` with `source_language`, `requested_output_language`, and `page_inventory`.
+4. Initialize a scripted run manifest with `scripts/prepare_ui_run.py`; pass `--concept-expansion` when the run started from vague requirements. `ui-run.json` becomes the single source of truth for page count, artifacts, and gates.
+5. Run the SubAgent Direct-Use Gate.
+6. Run the Style Exploration Gate before page generation. Present style directions and samples, then stop for user approval. Write `qa/stage-approval-style.json` only after the user approves.
+7. Run the Page Coverage Gate against `ui-run.json`.
+8. Create one page brief for every required page, plus an intermediate interaction design file covering routes, task flows, state/error strategy, and page linkage. For fuzzy-source runs, also create an interaction/visual concept packet and a low/mid-fidelity clickable interaction demo when it helps validate navigation before detailed UI rendering. Present these artifacts and stop for user approval. Write `qa/stage-approval-interaction-design.json` only after approval.
+9. Use `scripts/ui_job_status.py` to plan page worker batches of at most 6 active SubAgents.
+10. Run one page-level SubAgent for each required page to generate the UI image with the available image generation tool and complete page calibration/review.
+11. After each page worker returns, use `scripts/record_ui_worker_result.py` from the main thread to register its artifacts in `ui-run.json`.
+12. Run the Per-Page SubAgent Gate.
+13. Perform the main-agent audit across all pages. Present approved AI page images and audit notes to the user, then stop for approval. Write `qa/stage-approval-ai-design-images.json` only after the user approves.
+14. Generate a clean structured product design document in `requested_output_language`; it must pass the Structured Design Document Quality Gate and explain the design problem, users, scope, source traceability, user stories, acceptance criteria, design rationale, page linkage, interaction/state matrices, component tokens, content/data model, accessibility, design acceptance, and revision history. Do not include delivery links, worker evidence, audit results, run commands, visual parity scores, or React/Figma/Feishu delivery acceptance in the design document.
+15. Write `qa/structured-design-doc-audit.json`, present the local structured design document to the user, and stop for approval. Write `qa/stage-approval-design-doc.json` only after the user approves.
+16. If Feishu/Lark delivery is requested, use `design-doc-to-ui-feishu-doc` now: create/update the rich document, fetch the published Feishu link back, verify the remote linked content was updated successfully and has no mojibake/stale content, write both `qa/feishu-doc-audit.json` and `qa/feishu-doc-content-audit.json`, then stop for user approval of the Feishu link. Write `qa/stage-approval-feishu-doc.json` only after approval.
+17. Run `scripts/validate_design_run.py --phase design-completion`; React/Figma remains blocked unless this passes with `react_allowed: true`. When Feishu is requested, this gate also requires Feishu remote content verification and user approval.
+18. Run the Companion Skill Gate for visual audit, then generate a React prototype project with `scripts/build_prototype_data.py --template react --copy-template`.
+19. In the main thread, create the React scaffold first: app shell, route registry, shared layout, style tokens/CSS, base components, right-side page switcher, scroll container contract, page slots, and page-worker ownership map. Write passing `prototype/qa/react-scaffold-audit.json` before starting React page workers.
+20. Start one page-level React Prototype SubAgent per required page using `references/react-prototype-worker-prompt.md`, batching with at most 6 active SubAgents. Each page worker must build its assigned route inside the main-agent scaffold, follow the shared style system, self-review page-local interactions, and write page-level QA before returning.
+21. Integrate the React app in the main thread: shared shell adjustments, route targets, cross-page state, and whole-product jump logic. Run the React Prototype Worker Gate: require the scaffold audit, every page worker result, plus aggregate `prototype/qa/react-worker-result.json` and `prototype/qa/react-interaction-audit.json` to pass, including `global_navigation_passed: true`. Screenshot/hotspot/image-browser demos are non-compliant.
+22. Run the React Visual Parity Gate with `design-doc-to-ui-visual-audit`: render every required route, compare screenshots to approved AI page images, and repair until every page is at least 80% similar.
+23. Optionally create/update Figma only when requested; this stage must use `design-doc-to-ui-figma-replica`, start one page-level Figma Replica SubAgent per required page with at most 6 active SubAgents, then have the main agent wire global prototype links/cross-frame jumps and pass the editable-frame, frontend-handoff, asset-reconstruction, prototype-link, and 80% per-page replica gates.
+24. Run `scripts/validate_design_run.py --phase delivery` and perform the Final Functional Audit on React plus any requested Feishu/Figma outputs.
 
-Do not skip requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, user approval checkpoints, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, Companion Skill Gate, React Scaffold Gate, React Page Worker Gate, Visual Parity Gate, Feishu remote content verification when requested, Delivery Gate, or Final Functional Audit.
+Do not skip fuzzy requirement expansion when the input is exploratory, requirement summarization, SubAgent Direct-Use Gate, Style Exploration Gate, user approval checkpoints, Page Coverage Gate, per-page SubAgent review, main-agent audit, Design Completion Gate, Companion Skill Gate, React Scaffold Gate, React Page Worker Gate, Visual Parity Gate, Feishu remote content verification when requested, Delivery Gate, or Final Functional Audit.
 
 Do not silently reduce scope with labels such as "pilot", "core flow", "trial", or "MVP slice". A page from `page_inventory` may be deferred only when the user explicitly approves the deferral; record it as `user-approved deferred`, not approved.
 
@@ -90,6 +94,12 @@ Start every run with:
 
 ```bash
 python scripts/prepare_ui_run.py --source <source.md> --run-dir <output-run-dir> --requested-output-language <language>
+```
+
+For a run that started from a vague idea or exploratory conversation, write the approved expanded brief first and initialize with:
+
+```bash
+python scripts/prepare_ui_run.py --source source/expanded-product-brief.md --run-dir <output-run-dir> --requested-output-language <language> --source-type idea --concept-expansion
 ```
 
 If the source page list is already extracted as JSON, pass it with `--pages-json`. If useful, `--write-brief-stubs` can create draft brief JSON files that must still be completed from the source before page generation.
@@ -137,6 +147,7 @@ For release or installation validation, use `--require-all`.
 
 Read `references/source-ingestion.md` when handling input sources.
 
+- For vague ideas, rough prompts, or exploratory conversations, run the Fuzzy Requirement Expansion Gate in `references/source-ingestion.md` first. Capture the agreed product concept, user scenarios, page inventory, interaction model, style hypotheses, assumptions, and open questions before starting `ui-run.json`.
 - For Feishu/Lark wiki/doc URLs, use the `lark-doc` skill. Extract text, tables, references, images, and source outline/heading IDs. Download relevant images into the project output folder.
 - For Markdown, parse the heading structure, local image links, remote image links, tables, and code blocks.
 - Normalize every source into `source_bundle` and `app_requirements_summary` before generating images.

@@ -1,6 +1,6 @@
 # Design Doc To UI Skill
 
-这是一个可安装的 Codex Skill 包，用于把 PRD、产品设计文档、飞书/Lark 文档、Markdown 规格、线框图、截图和品牌素材，转换成经过阶段确认的 UI 设计包。
+这是一个可安装的 Codex Skill 包，用于把模糊产品想法、粗略需求、PRD、产品设计文档、飞书/Lark 文档、Markdown 规格、线框图、截图和品牌素材，转换成经过阶段确认的 UI 设计包。
 
 当前仓库包含 1 个主 skill 和 3 个 companion skill：
 
@@ -14,12 +14,13 @@ skills/
 
 ## 这个 Skill 做什么
 
-`design-doc-to-ui` 会把源文档拆成可审查、可实现、可验证的 UI 设计工作流：
+`design-doc-to-ui` 会把模糊需求或源文档拆成可审查、可实现、可验证的 UI 设计工作流：
 
+- 从模糊想法开始时，先通过讨论扩展成产品概念、用户场景、页面清单和设计假设；
 - 读取源文档、图片、表格、飞书内容和页面线索；
 - 生成 `app_requirements_summary`、`page_inventory` 和 `ui-run.json`；
 - 先做风格探索，等待用户确认；
-- 再做交互设计、页面 brief、路由和状态模型，等待用户确认；
+- 再做交互设计、页面 brief、路由、状态模型和必要的低/中保真交互 demo，等待用户确认；
 - 使用页面级 SubAgent 为每个 required 页面生成 imagegen UI 图；
 - 主 Agent 审查全部页面图，再等待用户确认；
 - 生成干净的结构化设计文档，等待用户确认；
@@ -31,7 +32,17 @@ skills/
 
 ## 重要原则
 
-### 1. 飞书只放干净设计文档
+### 1. 可以从模糊需求开始
+
+用户不必先写完整 PRD。可以先给一句粗略想法、一个目标用户、一个业务问题或一段讨论，skill 会先产出：
+
+- `source/expanded-product-brief.md`：扩展后的产品概念、目标用户、核心场景、页面清单、假设和风险；
+- `qa/stage-approval-product-concept.json`：用户确认后的产品概念冻结记录；
+- `qa/interaction-concept-packet.md` 和可选 `concept-demo/`：用于先验证任务流、页面关系、状态和导航的交互视觉方案。
+
+这个阶段只冻结产品范围和交互方向，不替代后续 imagegen 页面视觉图、React 原型或 Figma 复刻。
+
+### 2. 飞书只放干净设计文档
 
 飞书文档必须是产品/交互/视觉设计文档，不是交付报告。禁止上传：
 
@@ -44,7 +55,7 @@ skills/
 
 这些交付材料只保存在本地 `qa/` 或单独的本地交付索引中，例如 `qa/delivery-index.md`、`qa/final-delivery-audit.json`。
 
-### 2. 设计文档必须像设计文档
+### 3. 设计文档必须像设计文档
 
 结构化设计文档必须包含：
 
@@ -60,16 +71,17 @@ skills/
 
 如果文档主要是截图目录、页面清单、交付链接、审计表或 worker 记录，门禁会失败。
 
-### 3. 阶段必须让用户确认
+### 4. 阶段必须让用户确认
 
 长任务必须分阶段停止并等待用户确认：
 
-1. 风格方向确认；
-2. 交互设计和页面 brief 确认；
-3. AI 页面设计图确认；
-4. 本地结构化设计文档确认；
-5. 飞书远端文档确认，仅在用户要求飞书时；
-6. React/Figma 生成和最终审计。
+1. 产品概念确认，仅在从模糊需求开始时；
+2. 风格方向确认；
+3. 交互设计、页面 brief 和交互 demo 确认；
+4. AI 页面设计图确认；
+5. 本地结构化设计文档确认；
+6. 飞书远端文档确认，仅在用户要求飞书时；
+7. React/Figma 生成和最终审计。
 
 ## 安装
 
@@ -122,6 +134,12 @@ foreach ($skill in $skills) {
 
 ## 如何开始
 
+可以从模糊需求开始：
+
+```text
+请使用 $design-doc-to-ui，我们先讨论一个模糊需求：我想做一个面向独立开发者的 AI 产品运营工具。先帮我扩展需求、梳理页面和交互 demo，等我确认后再生成 UI 视觉图、React 原型、设计文档，并按需上传 Figma。
+```
+
 给 Codex 一个源文档，并明确使用主 skill：
 
 ```text
@@ -145,18 +163,19 @@ foreach ($skill in $skills) {
 主流程如下：
 
 1. 读取源文档和素材。
-2. 提取页面清单、源语言、输出语言和需求摘要。
-3. 初始化 `ui-run.json`。
-4. 进行风格探索，生成 2-3 个风格方向和样例，等待用户确认。
-5. 为每个 required 页面写 page brief，并生成中间交互设计文件，等待用户确认。
-6. 每个 required 页面启动一个页面级 SubAgent 生成 UI 图。
-7. 主 Agent 审查页面图，必要时返工，再等待用户确认。
-8. 生成干净结构化设计文档，并写 `qa/structured-design-doc-audit.json`。
-9. 用户确认设计文档后，如果要求飞书，则上传干净飞书文档。
-10. 上传飞书后，必须重新 fetch 远端链接，校验内容已更新、无乱码、无交付/审计材料泄漏。
-11. 设计阶段门禁通过后，生成 React 原型。
-12. React 通过交互和视觉审计后，按需生成 Figma 可编辑复刻。
-13. 所有交付审计结果保存在本地 `qa/`。
+2. 如果输入是模糊需求，先生成 `expanded-product-brief.md` 并等待用户确认。
+3. 提取页面清单、源语言、输出语言和需求摘要。
+4. 初始化 `ui-run.json`。
+5. 进行风格探索，生成 2-3 个风格方向和样例，等待用户确认。
+6. 为每个 required 页面写 page brief，并生成中间交互设计文件和必要的低/中保真交互 demo，等待用户确认。
+7. 每个 required 页面启动一个页面级 SubAgent 生成 UI 图。
+8. 主 Agent 审查页面图，必要时返工，再等待用户确认。
+9. 生成干净结构化设计文档，并写 `qa/structured-design-doc-audit.json`。
+10. 用户确认设计文档后，如果要求飞书，则上传干净飞书文档。
+11. 上传飞书后，必须重新 fetch 远端链接，校验内容已更新、无乱码、无交付/审计材料泄漏。
+12. 设计阶段门禁通过后，生成 React 原型。
+13. React 通过交互和视觉审计后，按需生成 Figma 可编辑复刻。
+14. 所有交付审计结果保存在本地 `qa/`。
 
 ## 主要输出
 
@@ -165,9 +184,14 @@ foreach ($skill in $skills) {
 ```text
 ui-run.json
 app-requirements-summary.json
+source/
+  expanded-product-brief.md
 page-briefs/
+concept-demo/
 design-images/
 qa/
+  interaction-concept-packet.md
+  stage-approval-product-concept.json
   structured-design-doc.md
   structured-design-doc-audit.json
   stage-approval-style.json
@@ -190,6 +214,7 @@ prototype/
 
 ```bash
 python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source prd.md --run-dir out/app --requested-output-language zh-CN
+python skills/design-doc-to-ui/scripts/prepare_ui_run.py --source source/expanded-product-brief.md --run-dir out/app --requested-output-language zh-CN --source-type idea --concept-expansion
 python skills/design-doc-to-ui/scripts/ui_job_status.py --run-dir out/app
 python skills/design-doc-to-ui/scripts/record_ui_worker_result.py --run-dir out/app --page-id home
 python skills/design-doc-to-ui/scripts/validate_companion_skills.py --run-dir out/app --require-all
@@ -201,6 +226,7 @@ python skills/design-doc-to-ui/scripts/validate_design_run.py --run-dir out/app 
 `validate_design_run.py` 会检查：
 
 - required 页面是否都有 brief、worker result、review、prompt history 和 final image；
+- 从模糊需求开始时，是否有扩展产品简报和用户确认；
 - 风格、交互设计、页面图、设计文档是否有用户确认；
 - 结构化设计文档是否是干净设计文档；
 - 飞书远端内容是否真正更新成功；

@@ -277,6 +277,12 @@ def structured_doc_ready(run_dir: Path, manifest: dict[str, Any]) -> bool:
     return bool(path and path.exists() and path.stat().st_size > 0)
 
 
+def text_artifact_ready(run_dir: Path, manifest: dict[str, Any], key: str) -> bool:
+    artifacts = manifest.get("artifacts") or {}
+    path = resolve_run_path(run_dir, artifacts.get(key))
+    return bool(path and path.exists() and path.is_file() and path.stat().st_size > 0)
+
+
 def structured_doc_quality_passed(run_dir: Path, manifest: dict[str, Any]) -> bool:
     artifacts = manifest.get("artifacts") or {}
     path = resolve_run_path(run_dir, artifacts.get("structured_design_doc_audit"))
@@ -384,6 +390,9 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
     status["main_audit_passed"] = audit_passed(run_dir, manifest)
     status["structured_design_doc_ready"] = structured_doc_ready(run_dir, manifest)
     status["structured_design_doc_quality_passed"] = structured_doc_quality_passed(run_dir, manifest)
+    status["concept_expansion_required"] = bool((manifest.get("workflow") or {}).get("concept_expansion_required"))
+    status["expanded_product_brief_ready"] = text_artifact_ready(run_dir, manifest, "expanded_product_brief")
+    status["product_concept_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_product_concept")
     status["style_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_style")
     status["interaction_design_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_interaction_design")
     status["ai_design_images_user_approved"] = stage_approval_passed(run_dir, manifest, "stage_approval_ai_design_images")
@@ -454,6 +463,8 @@ def refresh_phase_status(manifest: dict[str, Any], run_dir: Path) -> dict[str, A
             status["no_active_subagents"],
         ]
     )
+    if status["concept_expansion_required"]:
+        allowed = allowed and status["expanded_product_brief_ready"] and status["product_concept_user_approved"]
     channels = manifest.get("delivery_channels") or {}
     if (channels.get("feishu") or {}).get("requested"):
         allowed = allowed and status["feishu_doc_content_verified"] and status["feishu_doc_user_approved"]

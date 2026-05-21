@@ -25,6 +25,7 @@ DIRECTORIES = [
     "style-samples",
     "workers",
     "design-images",
+    "concept-demo",
     "prototype",
     "qa",
     "figma-assets",
@@ -248,10 +249,17 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
     title = args.source_title or extract_title(source_text, Path(args.source).stem)
     product_name = args.product_name or title
 
+    fuzzy_source_types = {"idea", "conversation", "fuzzy", "rough", "concept"}
+    concept_expansion_required = bool(args.concept_expansion or str(args.source_type).lower() in fuzzy_source_types)
+
     return {
         "schema_version": "1.1",
         "run_kind": "design-doc-to-ui",
         "created_at": now_iso(),
+        "workflow": {
+            "concept_expansion_required": concept_expansion_required,
+            "concept_expansion_source": "conversation_or_rough_idea" if concept_expansion_required else "not_required",
+        },
         "product_name": product_name,
         "source": {
             "type": args.source_type,
@@ -300,6 +308,11 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
         "directories": {name.replace("-", "_"): name for name in DIRECTORIES},
         "artifacts": {
             "app_requirements_summary": "source/app-requirements-summary.json",
+            "raw_idea": "source/raw-idea.md",
+            "expanded_product_brief": "source/expanded-product-brief.md",
+            "interaction_concept_packet": "qa/interaction-concept-packet.md",
+            "interaction_concept_demo": "concept-demo",
+            "stage_approval_product_concept": "qa/stage-approval-product-concept.json",
             "global_style_contract": "qa/global-style-contract.json",
             "design_thinking_map": "qa/design-thinking-map.md",
             "main_audit": "qa/main-audit.json",
@@ -336,6 +349,9 @@ def build_manifest(args: argparse.Namespace, source_text: str, pages: list[dict[
             "revision_subagent_registry": "qa/revision-subagent-registry.json",
         },
         "phase_status": {
+            "concept_expansion_required": concept_expansion_required,
+            "expanded_product_brief_ready": False,
+            "product_concept_user_approved": False,
             "app_requirements_summary_ready": True,
             "page_inventory_ready": bool(pages),
             "style_contract_locked": False,
@@ -398,6 +414,7 @@ def app_requirements_summary(manifest: dict[str, Any]) -> dict[str, Any]:
         "product_name": manifest.get("product_name"),
         "source_language": (manifest.get("source") or {}).get("source_language"),
         "requested_output_language": manifest.get("requested_output_language"),
+        "workflow": manifest.get("workflow") or {},
         "page_inventory": manifest.get("page_inventory") or [],
         "delivery_channels": manifest.get("delivery_channels") or {},
         "prototype_policy": manifest.get("prototype_policy") or {},
@@ -413,6 +430,7 @@ def main() -> int:
     parser.add_argument("--source-title", help="Override source title.")
     parser.add_argument("--product-name", help="Override product name.")
     parser.add_argument("--source-type", default="markdown", help="Source type label.")
+    parser.add_argument("--concept-expansion", action="store_true", help="Mark the run as starting from vague requirements or an exploratory product idea.")
     parser.add_argument("--pages-json", help="Optional extracted page inventory JSON.")
     parser.add_argument("--platforms", nargs="+", default=["mobile"], help="Target platform labels.")
     parser.add_argument("--default-endpoint", default="mobile", help="Default endpoint for pages.")

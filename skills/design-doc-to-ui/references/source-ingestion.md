@@ -2,6 +2,30 @@
 
 Normalize every input source before generating UI.
 
+## Fuzzy Requirement / Conversation Source
+
+Use this path when the user starts with a rough product idea, a vague scenario, a target audience, a problem statement, or an exploratory conversation instead of a finished PRD.
+
+Do not demand a full PRD before helping. Turn the conversation into a reviewable product concept:
+
+1. Capture the user's raw idea and constraints as `source/raw-idea.md` or append them to the normalized source.
+2. Ask only high-leverage questions when the answer changes product scope, primary user, platform, monetization, compliance, or design direction. For ordinary gaps, state a clear assumption and continue.
+3. Produce `source/expanded-product-brief.md` before page briefs. It must include:
+   - product one-liner and target users;
+   - user problems, jobs-to-be-done, and core scenarios;
+   - business/user goals and non-goals;
+   - assumptions vs confirmed requirements;
+   - information architecture and candidate page inventory;
+   - main task flows, entry points, recovery paths, and state/error strategy;
+   - interaction/visual concept hypotheses;
+   - demo scope for an early low/mid-fidelity interaction prototype when useful;
+   - acceptance criteria, open questions, and risks.
+4. Present the expanded brief to the user and wait for approval or edits before freezing scope. Record approval in `qa/stage-approval-product-concept.json`.
+5. Convert the approved expanded brief into `app_requirements_summary` and `page_inventory`.
+6. Initialize the run with `prepare_ui_run.py --concept-expansion` so the manifest records that the run came from fuzzy requirements.
+
+The early interaction demo is for validating structure and flow, not for replacing the final React prototype. It may be a lightweight local React/HTML demo, storyboard, or clickable wireframe. It must make route targets, primary actions, empty/error/success states, and navigation assumptions visible before detailed UI image generation starts. Do not treat it as final visual parity evidence.
+
 ## Feishu/Lark Source
 
 When the user provides a Feishu/Lark wiki or doc URL:
@@ -47,7 +71,7 @@ Produce this structure before summarizing requirements:
 
 ```json
 {
-  "source_type": "feishu|markdown|pdf|docx|image|mixed",
+  "source_type": "idea|conversation|feishu|markdown|pdf|docx|image|mixed",
   "source_refs": [],
   "raw_sections": [
     {
@@ -69,7 +93,13 @@ Produce this structure before summarizing requirements:
   ],
   "links": [],
   "constraints": [],
-  "open_questions": []
+  "open_questions": [],
+  "concept_expansion": {
+    "required": false,
+    "expanded_product_brief": "",
+    "confirmed_requirements": [],
+    "assumptions": []
+  }
 }
 ```
 
@@ -83,8 +113,10 @@ Create this before page briefs:
   "source_language": "",
   "requested_output_language": "",
   "target_users": [],
+  "problem_statement": "",
   "core_scenarios": [],
   "business_goals": [],
+  "non_goals": [],
   "page_list": [],
   "page_inventory": [
     {
@@ -114,6 +146,7 @@ Create this before page briefs:
   "expected_style_types": [],
   "platforms": ["web", "pc", "mobile", "tablet"],
   "acceptance_criteria": [],
+  "assumptions": [],
   "unknowns": []
 }
 ```
