@@ -1,3 +1,5 @@
+> **⚠️ MOVED / 已迁移**: This skill now lives in [KilimiaoSix/agent-skills](https://github.com/KilimiaoSix/agent-skills) under `skills/design-doc-to-ui (and 4 sibling skills)`. This repository is archived and no longer maintained. 本仓库已归档，后续维护均在 agent-skills 合集仓库进行。
+
 # Design Doc To UI Skill
 
 这是一个可安装的 Codex Skill 包，用于把模糊产品想法、粗略需求、PRD、产品设计文档、飞书/Lark 文档、Markdown 规格、线框图、截图和品牌素材，转换成经过阶段确认的 UI 设计包。
